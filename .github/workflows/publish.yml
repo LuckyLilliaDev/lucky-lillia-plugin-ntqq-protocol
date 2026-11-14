@@ -1,0 +1,118 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build, test and pack without publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+env:
+  NPM_CONFIG_REGISTRY: https://registry.npmjs.org
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.16.0 --ignore-scripts
+
+      - name: Validate release metadata
+        run: node scripts/release.mjs metadata
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check types
+        run: npm run check
+
+      - name: Test
+        run: npm test
+
+      - name: Build and validate production native bundle
+        run: npm run build
+
+      - name: Pack and inspect the tested build
+        run: |
+          mkdir -p "$RUNNER_TEMP/npm-release"
+          npm pack --ignore-scripts --json --pack-destination "$RUNNER_TEMP/npm-release" > "$RUNNER_TEMP/npm-release/pack.json"
+          node scripts/release.mjs pack "$RUNNER_TEMP/npm-release"
+
+      - name: Upload checked package
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-release/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+  publish:
+    needs: build
+    if: github.event_name != 'workflow_dispatch' || !inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout release verification scripts
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@11.16.0 --ignore-scripts
+
+      - name: Download checked package
+        uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: ${{ runner.temp }}/npm-release
+
+      - name: Verify release and artifact integrity
+        id: release
+        run: |
+          node scripts/release.mjs metadata
+          node scripts/release.mjs verify "$RUNNER_TEMP/npm-release"
+
+      - name: Reject an already published version
+        run: node scripts/release.mjs available
+
+      - name: Publish with npm trusted publishing
+        env:
+          PACKAGE_TARBALL: ${{ steps.release.outputs.tarball }}
+          NPM_TAG: ${{ steps.release.outputs.npm_tag }}
+        run: npm publish "$PACKAGE_TARBALL" --ignore-scripts --provenance --access public --tag "$NPM_TAG" --registry=https://registry.npmjs.org
+
+      - name: Verify public version and integrity
+        run: node scripts/release.mjs published "$RUNNER_TEMP/npm-release"
