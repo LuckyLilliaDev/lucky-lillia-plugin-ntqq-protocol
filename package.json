@@ -1,0 +1,110 @@
+{
+  "name": "@luckylillia/plugin-nt-protocol",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "LuckyLillia NTQQ protocol: QR/quick login and official QQ client bridge",
+  "main": "./lib/index.js",
+  "files": [
+    "lib",
+    "native/production",
+    "README.md",
+    "LICENSE"
+  ],
+  "author": {
+    "name": "LuckyLillia",
+    "url": "https://github.com/LuckyLilliaDev"
+  },
+  "license": "GPL-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LuckyLilliaDev/lucky-lillia-plugin-ntqq-protocol.git"
+  },
+  "engines": {
+    "node": ">=22.15"
+  },
+  "peerDependencies": {
+    "@luckylillia/plugin-sdk": "^1.0.1"
+  },
+  "llbot": {
+    "category": "protocol",
+    "icon": "smartphone",
+    "service": {
+      "implements": [
+        "qqProtocol",
+        "app",
+        "store",
+        "ntOnebot"
+      ],
+      "labels": {
+        "app": "NTQQ 账号登录",
+        "store": "NTQQ 账号登录",
+        "ntOnebot": "NTQQ 账号登录"
+      }
+    },
+    "description": "扫码、快速登录或桥接官方 QQ 客户端，为 OneBot、Milky、Satori 和 WebQQ 提供 NTQQ 账号服务",
+    "title": "NTQQ 协议",
+    "webui": "./lib/client/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/declarations/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./api": {
+      "types": "./lib/declarations/api.d.ts",
+      "default": "./lib/api.js"
+    },
+    "./types": {
+      "types": "./lib/declarations/types.d.ts",
+      "default": "./lib/types.js"
+    },
+    "./contracts": {
+      "types": "./lib/declarations/contracts.d.ts",
+      "default": "./lib/contracts.js"
+    },
+    "./onebot": {
+      "types": "./lib/declarations/onebot.d.ts",
+      "default": "./lib/onebot.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "vitest run",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@cordisjs/plugin-database": "^4.2.0",
+    "@cordisjs/plugin-database-sqlite": "^5.2.0",
+    "@saltify/typeproto": "^0.4.1",
+    "cosmokit": "^1.8.1",
+    "fast-xml-parser": "^5.11.1",
+    "file-type": "^22.0.2",
+    "get-port": "^7.2.0",
+    "hono": "^4.13.5",
+    "qrcode": "^1.5.4",
+    "ts-case-convert": "^2.3.2"
+  },
+  "devDependencies": {
+    "@cordisjs/plugin-timer": "^1.1.4",
+    "@luckylillia/plugin-sdk": "^1.0.1",
+    "@tailwindcss/postcss": "^4.2.0",
+    "@types/node": "^24.12.4",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "~0.28.0",
+    "lucide-react": "^0.575.0",
+    "postcss": "^8.5.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "tailwindcss": "^4.2.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.12"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
+}
