@@ -1,0 +1,2 @@
+# The native manifest hashes these files; checkouts must preserve their exact bytes.
+native/production/** -text
