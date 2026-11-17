@@ -50,6 +50,7 @@ export class GetGroupMsgHistory extends BaseAction<Payload, Response> {
       const start = Math.max(overallStartSeq, cur - 30 + 1)
       windows.push({ start, end: cur })
     }
+    if (windows.length === 0) return { messages: [] }
 
     const rawBatches = await mapWithConcurrency(
       windows,

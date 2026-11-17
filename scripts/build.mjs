@@ -57,8 +57,14 @@ for (const entry of await fs.readdir(lib, { withFileTypes: true })) {
   if (!currentOutputs.has(file)) await fs.unlink(file)
 }
 // Read only the side-effect-free action registry: this does not load a native module or create a session.
-const { initActionMap } = await import(pathToFileURL(path.join(lib, 'onebot.js')).href)
-await fs.writeFile(path.join(lib, 'onebot-actions.json'), JSON.stringify([...initActionMap({ ctx: {} }).keys()].sort(), null, 2) + '\n')
+const { initActionMap, internalMethodName } = await import(pathToFileURL(path.join(lib, 'onebot.js')).href)
+const actions = [...initActionMap({ ctx: {} }).keys()].sort()
+await fs.writeFile(path.join(lib, 'onebot-actions.json'), JSON.stringify(actions, null, 2) + '\n')
+const internalMethods = Object.fromEntries(actions.flatMap(action => {
+  const method = internalMethodName(action)
+  return method ? [[method, action]] : []
+}))
+await fs.writeFile(path.join(lib, 'onebot-internal.json'), JSON.stringify(internalMethods, null, 2) + '\n')
 await fs.mkdir(path.join(lib, 'client'), { recursive: true })
 await build({ absWorkingDir: root, entryPoints: ['src/client/index.tsx'], outfile: path.join(lib, 'client/module.js'),
   bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, jsx: 'automatic',
@@ -74,6 +80,7 @@ await fs.writeFile(path.join(lib, 'client/style.css'), styled.css)
 await fs.writeFile(path.join(lib, 'client/index.js'), [
   'import apply from "./module.js"',
   'export default function(ctx) {',
+  `  if (ctx.style) { ctx.style('utilities', ${JSON.stringify(styled.css)}, { scope: 'plugin', when: 'loaded' }); return apply(ctx) }`,
   '  const style = document.createElement("link")',
   '  style.rel = "stylesheet"',
   '  style.href = new URL("./style.css", import.meta.url).href',

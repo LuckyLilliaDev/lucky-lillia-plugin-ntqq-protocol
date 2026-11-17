@@ -30,6 +30,7 @@ import { LoginInfoRoutes } from './loginInfoRoutes'
 import { bindLoggerFactory, setConfigLogLevel } from './support/logger'
 import { installFFmpegBridge } from './support/utils/ffmpeg'
 import { OneBotActions } from './onebot/service'
+import * as NTQQMessaging from './universal'
 
 export const name = 'nt-protocol'
 export const inject = ['config']
@@ -42,7 +43,8 @@ const selectionOf = (config: NTProtocolConfig): ProtocolSelection => resolveProt
 /**
  * The scanned QQ account: the protocol (pure, or NativeQQ bridging an official QQ client), the NT APIs and, once
  * logged in, the database, Core and Store. Switching it off takes all of that down, and everything
- * built on it (OneBot, Milky, WebQQ, the neutral layer's NT bot) waits until it is back.
+ * built on it (OneBot, Milky and WebQQ) waits until it is back. Its NT bot and message/event converters belong to
+ * the same login lifecycle, exposing the account to commands, chat plugins and Satori through ctx.bots.
  * Satori stays available for the other registered bots.
  */
 export function apply(ctx: Context, config: NTProtocolConfig) {
@@ -93,6 +95,7 @@ export function apply(ctx: Context, config: NTProtocolConfig) {
       own.plugin(Store, {
         msgCacheExpire: config.msgCacheExpire!,
       })
+      own.plugin(NTQQMessaging)
     })
   })
 
