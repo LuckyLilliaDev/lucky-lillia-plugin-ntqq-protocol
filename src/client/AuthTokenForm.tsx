@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Eye, EyeOff, KeyRound, ExternalLink, Loader2 } from 'lucide-react';
-import { usePluginContext } from '@luckylillia/plugin-sdk/webui';
+import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui';
 
 interface AuthTokenFormProps {
   // 决定标题文案; replace: 已有 token 时换一个, 账号可能在线

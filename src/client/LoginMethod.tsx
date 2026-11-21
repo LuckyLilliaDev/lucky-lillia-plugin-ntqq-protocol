@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Cpu, Loader2, MonitorSmartphone, Save } from 'lucide-react'
-import { PathInput, SelectInput, usePluginContext, type PluginConfigState } from '@luckylillia/plugin-sdk/webui'
+import { PathInput, SelectInput, usePluginContext, type PluginConfigState } from '@luckylillia-dev/plugin-sdk/webui'
 import type { NTProtocolConfig } from '../support/types'
 import {
   describeMethod, effectiveMethod, isEditable, LOGIN_MODES, LoginMode, pendingProtocol, pinnedBy, pinNote, protocolLabel, PROTOCOLS,

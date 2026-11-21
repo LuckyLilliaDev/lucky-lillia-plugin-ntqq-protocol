@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repository = 'LuckyLilliaDev/lucky-lillia-plugin-ntqq-protocol'
-const name = '@luckylillia/plugin-nt-protocol'
+const name = '@luckylillia-dev/plugin-nt-protocol'
 const registry = 'https://registry.npmjs.org'
 const targets = ['win-x64', 'darwin-x64', 'darwin-arm64', 'linux-x64-glibc',
   'linux-arm64-glibc', 'linux-x64-musl', 'linux-arm64-musl']
@@ -124,7 +124,7 @@ async function main() {
   const [pack] = json(path.join(directory, 'pack.json'))
   assert.equal(pack.name, pkg.name)
   assert.equal(pack.version, pkg.version)
-  assert.equal(pack.filename, 'luckylillia-plugin-nt-protocol-' + pkg.version + '.tgz')
+  assert.equal(pack.filename, 'luckylillia-dev-plugin-nt-protocol-' + pkg.version + '.tgz')
   const tarball = path.join(directory, pack.filename)
   const release = { name: pkg.name, version: pkg.version, filename: pack.filename, npmTag, integrity: pack.integrity }
   if (command === 'pack') {

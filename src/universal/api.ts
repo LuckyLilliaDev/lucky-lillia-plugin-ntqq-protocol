@@ -1,6 +1,6 @@
 import { Channel } from '@satorijs/protocol'
 import { Context } from 'cordis'
-import type { NeutralList, NeutralResource } from '@luckylillia/plugin-sdk'
+import type { NeutralList, NeutralResource } from '@luckylillia-dev/plugin-sdk'
 import * as NT from '../api'
 import { filterNullable } from '../support/utils/misc'
 import {

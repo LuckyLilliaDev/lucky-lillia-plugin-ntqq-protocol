@@ -186,14 +186,14 @@ export type ProtocolId = 'linux' | 'windows' | 'macos' | 'watch'
 
 /**
  * The profile the protocol layer runs with. The pure protocol: what it is locked to, else `--protocol` / `-p` >
- * the PROTOCOL environment variable > the NT protocol plugin's choice > macos (its default); an unknown value of
+ * the PROTOCOL environment variable > the NT protocol plugin's choice > linux (its default); an unknown value of
  * a flag or the variable is linux. NativeQQ has always run with linux unless launched with another (highway
  * appId, SsoInfoSync), so switching to it keeps that.
  */
 export function getProtocol(): ProtocolId {
     const pinned = launchPins().protocol?.value
     if (selection?.mode === 'nativeqq') return pinned ?? 'linux'
-    return locked ?? pinned ?? selection?.protocol ?? 'macos'
+    return locked ?? pinned ?? selection?.protocol ?? 'linux'
 }
 
 /** A blank value pins nothing, e.g. PROTOCOL= from a compose file whose variable is unset. */

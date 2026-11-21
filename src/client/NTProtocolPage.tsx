@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Loader2, Power, Smartphone } from 'lucide-react'
-import { usePluginConfig, usePluginContext, usePluginStatus } from '@luckylillia/plugin-sdk/webui'
+import { usePluginConfig, usePluginContext, usePluginStatus } from '@luckylillia-dev/plugin-sdk/webui'
 import type { NTProtocolConfig } from '../support/types'
 import AuthTokenCard from './AuthTokenCard'
 import AuthTokenForm, { type AuthTokenStatus } from './AuthTokenForm'

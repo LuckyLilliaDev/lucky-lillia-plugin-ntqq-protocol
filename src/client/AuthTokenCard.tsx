@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { usePluginContext } from '@luckylillia/plugin-sdk/webui'
+import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui'
 import AuthTokenForm, { type AuthTokenStatus } from './AuthTokenForm'
 
 const WARN = 'text-amber-600 dark:text-amber-400'

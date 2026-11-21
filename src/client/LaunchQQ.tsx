@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { Loader2, MonitorSmartphone } from 'lucide-react'
-import { usePluginContext } from '@luckylillia/plugin-sdk/webui'
+import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui'
 
 interface LaunchQQProps {
   /** What the bridge runs with, from /api/login-info: the chosen QQ, and a configuration file given at launch */

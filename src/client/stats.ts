@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { usePluginContext, type WebUIContext } from '@luckylillia/plugin-sdk/webui'
+import { usePluginContext, type WebUIContext } from '@luckylillia-dev/plugin-sdk/webui'
 
 export interface NTStats {
   online: boolean
   uin: string
   nick: string
+  /** When the account came online (ms); kept across reconnects, missing while offline */
+  onlineSince?: number
   mode: 'direct' | 'nativeqq'
   protocol?: string
   version?: string

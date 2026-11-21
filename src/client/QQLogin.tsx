@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw, Loader2 } from 'lucide-react';
-import { usePluginContext } from '@luckylillia/plugin-sdk/webui';
+import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui';
 import { isQuickLoginUnsupported, readQuickLoginList } from './quickLoginList';
 
 interface Account {

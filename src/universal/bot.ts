@@ -1,7 +1,7 @@
 import h from '@satorijs/element'
 import { Status } from '@satorijs/protocol'
 import { Context } from 'cordis'
-import type { Bot, Feature, NeutralList, NeutralResource, SendOptions } from '@luckylillia/plugin-sdk'
+import type { Bot, Feature, NeutralList, NeutralResource, SendOptions } from '@luckylillia-dev/plugin-sdk'
 import type { SelfInfo } from '../api'
 import * as api from './api'
 import { createInternal, type Internal } from './internal'

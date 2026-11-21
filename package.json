@@ -1,6 +1,6 @@
 {
-  "name": "@luckylillia/plugin-nt-protocol",
-  "version": "1.0.2",
+  "name": "@luckylillia-dev/plugin-nt-protocol",
+  "version": "1.0.3",
   "type": "module",
   "description": "LuckyLillia NTQQ protocol: QR/quick login and official QQ client bridge",
   "main": "./lib/index.js",
@@ -23,7 +23,7 @@
     "node": ">=22.15"
   },
   "peerDependencies": {
-    "@luckylillia/plugin-sdk": "^1.0.1"
+    "@luckylillia-dev/plugin-sdk": "^1.0.1"
   },
   "llbot": {
     "category": "protocol",
@@ -90,7 +90,7 @@
   },
   "devDependencies": {
     "@cordisjs/plugin-timer": "^1.1.4",
-    "@luckylillia/plugin-sdk": "^1.0.1",
+    "@luckylillia-dev/plugin-sdk": "npm:@luckylillia/plugin-sdk@^1.0.1",
     "@tailwindcss/postcss": "^4.2.0",
     "@types/node": "^24.12.4",
     "@types/qrcode": "^1.5.6",

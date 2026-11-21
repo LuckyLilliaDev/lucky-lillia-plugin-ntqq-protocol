@@ -68,7 +68,7 @@ await fs.writeFile(path.join(lib, 'onebot-internal.json'), JSON.stringify(intern
 await fs.mkdir(path.join(lib, 'client'), { recursive: true })
 await build({ absWorkingDir: root, entryPoints: ['src/client/index.tsx'], outfile: path.join(lib, 'client/module.js'),
   bundle: true, format: 'esm', platform: 'browser', target: 'es2022', minify: true, jsx: 'automatic',
-  external: ['react', 'react/*', 'react-dom', 'react-dom/*', '@luckylillia/plugin-sdk/webui'] })
+  external: ['react', 'react/*', 'react-dom', 'react-dom/*', '@luckylillia-dev/plugin-sdk/webui'] })
 const require = createRequire(import.meta.url)
 const tailwindDir = path.dirname(require.resolve('tailwindcss/package.json')).split(path.sep).join('/')
 const css = '@import "' + tailwindDir + '/theme.css" layer(theme);\n'

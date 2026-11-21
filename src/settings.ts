@@ -13,7 +13,7 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
     Schema.const('macos').description('macOS'),
     Schema.const('windows').description('Windows'),
     Schema.const('watch').description('手表'),
-  ]).default('macos').description('纯协议模拟的 QQ 客户端'),
+  ]).default('linux').description('纯协议模拟的 QQ 客户端'),
   nativeQQ: Schema.object({
     qqPath: Schema.string().default('').description('QQ 可执行文件绝对路径（留空自动检测）'),
   }).description('官方 QQ 客户端桥接'),

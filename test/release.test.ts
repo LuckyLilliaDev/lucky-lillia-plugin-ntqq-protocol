@@ -40,7 +40,7 @@ describe('release validation', () => {
 
   it('rejects the wrong package, repository URL, registry or private publication', () => {
     for (const replacement of [
-      { name: '@luckylillia/plugin-onebot11' },
+      { name: '@luckylillia-dev/plugin-onebot11' },
       { repository: { type: 'git', url: 'git+https://github.com/another/repo.git' } },
       { publishConfig: { access: 'public', registry: 'https://registry.npmmirror.com' } },
       { private: true },

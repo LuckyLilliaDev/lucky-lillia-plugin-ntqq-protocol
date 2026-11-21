@@ -1,8 +1,8 @@
-import { type WebUIPlugin } from '@luckylillia/plugin-sdk/webui'
+import { type WebUIPlugin } from '@luckylillia-dev/plugin-sdk/webui'
 import { AccountCard, QQResourcesCard } from './DashboardCards'
 import NTProtocolPage from './NTProtocolPage'
 
-export const name = '@luckylillia/plugin-nt-protocol'
+export const name = '@luckylillia-dev/plugin-nt-protocol'
 
 const apply: WebUIPlugin = (ctx) => {
   ctx.page({ id: 'ntqq', title: 'NTQQ 协议', icon: 'smartphone', component: NTProtocolPage, order: 5, settings: true })

@@ -1,6 +1,6 @@
 import { Status } from '@satorijs/protocol'
 import { Context } from 'cordis'
-import type { NeutralEvent } from '@luckylillia/plugin-sdk'
+import type { NeutralEvent } from '@luckylillia-dev/plugin-sdk'
 import * as NT from '../api'
 import { parseMessageCreated, parseMessageDeleted } from './event/message'
 import { parseGuildAdded, parseGuildRemoved, parseGuildRequest, parseGuildUpdated } from './event/guild'

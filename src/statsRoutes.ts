@@ -34,6 +34,7 @@ export function createNTStatsRoutes(ctx: Context): Hono {
           online: ctx.qqProtocol.selfInfo.online,
           uin: ctx.qqProtocol.selfInfo.uin,
           nick: ctx.qqProtocol.selfInfo.nick,
+          onlineSince: protocol?.onlineSince,
           ...account,
           mode,
           // --protocol 只对直连有意义

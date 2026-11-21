@@ -1,5 +1,5 @@
 import type { Config } from './support/types'
-import type {} from '@luckylillia/plugin-sdk'
+import type {} from '@luckylillia-dev/plugin-sdk'
 
 /** The config service is injected by the Bot; no implementation is imported or bundled here. */
 declare module 'cordis' {

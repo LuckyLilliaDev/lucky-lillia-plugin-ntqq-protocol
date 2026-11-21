@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Loader2, Settings2, X } from 'lucide-react'
-import { DurationInput, usePluginContext } from '@luckylillia/plugin-sdk/webui'
+import { DurationInput, usePluginContext } from '@luckylillia-dev/plugin-sdk/webui'
 
 /**
  * What is rarely changed, behind a button in the page's title, so the page itself is the login: for now how long

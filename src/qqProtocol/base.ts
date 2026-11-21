@@ -65,6 +65,14 @@ export abstract class QQProtocolBase extends Service {
   readonly authTokenStatus: AuthTokenStatus = { hasToken: false, validation: 'idle', message: '', loginError: '' }
 
   protected onlineEmitted: boolean = false
+  /** 账号上线的时刻: 同一账号断线重连不重置, 登出/换号/停用时清空 */
+  private onlineSession?: { uin: string; at: number }
+
+  /** 当前账号的运行起点 (毫秒时间戳); 离线时为 undefined */
+  public get onlineSince(): number | undefined {
+    const session = this.onlineSession
+    return this.selfInfo.online && session?.uin === this.selfInfo.uin ? session.at : undefined
+  }
   // Set when the protocol plugin is switched off: every loop and timer checks it before going on
   protected disposed: boolean = false
 
@@ -126,6 +134,7 @@ export abstract class QQProtocolBase extends Service {
 
   protected async clearLogin(): Promise<void> {
     this.onlineEmitted = false
+    this.onlineSession = undefined
     Object.assign(this.selfInfo, { online: false, uin: '', uid: '', nick: '' })
     await this.ctx.parallel('qq/logout')
   }
@@ -158,6 +167,7 @@ export abstract class QQProtocolBase extends Service {
     }
     this.disconnectCallbacks.clear()
     this.onlineEmitted = false
+    this.onlineSession = undefined
     this.selfInfo.online = false
     this.selfInfo.uin = ''
     this.selfInfo.uid = ''
@@ -183,6 +193,7 @@ export abstract class QQProtocolBase extends Service {
     if (!this.selfInfo.online) return
     if (!this.selfInfo.uid || !this.selfInfo.uin) return
     this.onlineEmitted = true
+    if (this.onlineSession?.uin !== this.selfInfo.uin) this.onlineSession = { uin: this.selfInfo.uin, at: Date.now() }
     this.qrAutoRefreshCount = 0
     this.authTokenStatus.loginError = ''
     this.ctx.parallel('qq/online')

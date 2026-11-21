@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Cpu, HardDrive, MessageCircle, MessageSquare, Send, Users, UsersRound } from 'lucide-react'
-import { usePluginContext } from '@luckylillia/plugin-sdk/webui'
+import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui'
 import { protocolLabel } from './loginOptions'
 import { useNTStats } from './stats'
 
@@ -37,12 +37,35 @@ const Meter: React.FC<{ icon: React.ReactNode; label: string; percent: number; d
   </div>
 )
 
+/** As the Bot's own uptime on the Dashboard */
+export const formatRunning = (since: number, now = Date.now()): string => {
+  const diff = Math.max(0, Math.floor((now - since) / 1000))
+  const days = Math.floor(diff / 86400)
+  const hours = Math.floor((diff % 86400) / 3600)
+  const minutes = Math.floor((diff % 3600) / 60)
+  const seconds = diff % 60
+  if (days > 0) return `${days}天 ${hours}时 ${minutes}分`
+  if (hours > 0) return `${hours}时 ${minutes}分 ${seconds}秒`
+  if (minutes > 0) return `${minutes}分 ${seconds}秒`
+  return `${seconds}秒`
+}
+
+/** How long the account has been online, ticking every second */
+const Running: React.FC<{ since: number }> = ({ since }) => {
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+  return <> · 已运行 {formatRunning(since, now)}</>
+}
+
 /** The scanned account and what it counts. The card around it is the WebUI's. */
 export const AccountCard: React.FC = () => {
   const ctx = usePluginContext()
   const stats = useNTStats()
   if (!stats) return null
-  const method = stats.mode === 'nativeqq' ? '官方 QQ 客户端桥接' : `纯协议 · ${protocolLabel(stats.protocol ?? 'macos')}`
+  const method = stats.mode === 'nativeqq' ? '官方 QQ 客户端桥接' : `纯协议 · ${protocolLabel(stats.protocol ?? 'linux')}`
   return (
     <div className="@container">
       <div className="flex items-center gap-3 mb-4">
@@ -55,7 +78,9 @@ export const AccountCard: React.FC = () => {
         )}
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-theme truncate">{stats.online ? stats.nick || stats.uin : 'NTQQ 账号'}</h3>
-          <p className="text-xs text-theme-muted truncate">{stats.online ? stats.uin : '还没有登录'}</p>
+          <p className="text-xs text-theme-muted truncate">
+            {stats.online ? <>{stats.uin}{stats.onlineSince ? <Running since={stats.onlineSince} /> : null}</> : '还没有登录'}
+          </p>
         </div>
         <div className="ml-auto flex items-center gap-1.5 flex-wrap justify-end">
           <span className={CHIP}>{method}</span>

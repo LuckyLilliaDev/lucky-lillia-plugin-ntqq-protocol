@@ -71,9 +71,9 @@ export interface ProtocolProfile {
   // ---- SSO head ----
   ssoProtocolVersion: number  // inner frame 版本字节: NT=12, Watch=10
   ssoHeadField8?: number      // 覆盖 subAppId 槽 (macOS 0x2007C26B); undefined=用 subAppId
-  ssoHeadField12?: number     // 覆盖 2052 槽 (macOS 0x20027635); undefined=用 2052
-  ssoFixedHeader?: Buffer     // 覆盖 FIXED_HEADER (macOS); undefined=用默认
-  ssoHeadVersion?: string     // 覆盖 head i16 version 槽 (Watch 'testrevision'); undefined=用 ctx.buildVer
+  ssoHeadField12?: number     // 覆盖 2052 槽 (macOS / Linux 3.2.35+ = 0x20027635); undefined=用 2052
+  ssoFixedHeader?: Buffer     // 覆盖 FIXED_HEADER (macOS [01..01 00] / Linux 3.2.35 [01..03 00]); undefined=用默认
+  ssoHeadVersion?: string     // 覆盖 head i16 version 槽 (Watch 'testrevision'; Linux 3.2.35 真机发空串); undefined=用 ctx.buildVer
   reserveVariant: ReserveVariant
 
   // ---- watch 专属 ----

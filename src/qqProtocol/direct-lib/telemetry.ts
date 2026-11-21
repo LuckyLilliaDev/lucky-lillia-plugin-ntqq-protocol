@@ -37,8 +37,9 @@ function protoMessageField(field: number, content: Buffer): Buffer {
   return Buffer.concat([protoTag(field, 2), encodeVarint(content.length), content])
 }
 
-// Version strings as the real client splits them: getNewFlag uses the short "3.2.28",
-// ClientReport uses the full "3.2.28-48517". Read when sent, once the profile is settled.
+// Version strings as the real client splits them (getNewFlag short / ClientReport full);
+// read from the profile on send, so they follow the active QQ version.
+// 拆分形状的依据是 3.2.28 抓包, 54395 未重抓遥测帧。
 const versionFull = () => AppInfo.buildVer
 const versionShort = () => versionFull().split('-')[0]
 
