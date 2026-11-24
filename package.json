@@ -1,6 +1,6 @@
 {
   "name": "@luckylillia-dev/plugin-nt-protocol",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "type": "module",
   "description": "LuckyLillia NTQQ protocol: QR/quick login and official QQ client bridge",
   "main": "./lib/index.js",
