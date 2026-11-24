@@ -6,6 +6,7 @@
   "main": "./lib/index.js",
   "files": [
     "lib",
+    "assets",
     "native/production",
     "README.md",
     "LICENSE"
@@ -27,7 +28,7 @@
   },
   "llbot": {
     "category": "protocol",
-    "icon": "smartphone",
+    "icon": "assets/icon.svg",
     "service": {
       "implements": [
         "qqProtocol",

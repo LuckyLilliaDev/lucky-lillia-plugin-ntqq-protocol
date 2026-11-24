@@ -62,7 +62,8 @@ function inspectTarball(file, pkg, pack) {
     const packedPackage = json(path.join(packedRoot, 'package.json'))
     assert.deepEqual(packedPackage, pkg, 'Packed package metadata differs from source')
     const required = new Set(['package.json', 'README.md', 'LICENSE', 'lib/onebot-actions.json',
-      'lib/client/module.js', 'lib/client/style.css', pkg.main, pkg.llbot.webui])
+      'lib/client/module.js', 'lib/client/style.css', pkg.main, pkg.llbot.webui,
+      ...(typeof pkg.llbot?.icon === 'string' && pkg.llbot.icon.includes('/') ? [pkg.llbot.icon] : [])])
     const addExports = entry => {
       if (typeof entry === 'string') required.add(entry)
       else for (const value of Object.values(entry)) addExports(value)
@@ -74,7 +75,7 @@ function inspectTarball(file, pkg, pack) {
     }
     for (const entry of pack.files) {
       assert.ok(['package.json', 'README.md', 'LICENSE'].includes(entry.path)
-        || entry.path.startsWith('lib/') || entry.path.startsWith('native/production/'),
+        || entry.path.startsWith('lib/') || entry.path.startsWith('assets/') || entry.path.startsWith('native/production/'),
       'Unexpected published file: ' + entry.path)
     }
     const nativeRoot = path.join(packedRoot, 'native/production')
