@@ -123,8 +123,10 @@ export interface NTProtocolConfig {
   mode: 'direct' | 'nativeqq'
   /** The QQ client the pure protocol passes for; NativeQQ ignores it */
   protocol: 'linux' | 'macos' | 'windows' | 'watch'
-  /** The QQ the bridge starts, empty: the one NativeQQ finds. A NativeQQ configuration file is only given at launch */
+  /** The QQ the bridge starts, empty: the one NativeQQ finds */
   nativeQQ: { qqPath: string }
+  /** The signing service's CDN: cf (Cloudflare), or china for mainland China */
+  signCdn: 'cf' | 'china'
   /** The account to log in when this instance starts; empty disables automatic login. */
   autoLoginUin: string
 }

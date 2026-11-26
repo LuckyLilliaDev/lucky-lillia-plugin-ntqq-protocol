@@ -1,7 +1,6 @@
-import { existsSync } from 'node:fs'
 import path from 'node:path'
 import { DATA_DIR } from './globalVars'
-import { getInstanceArg, getSpecifiedUin } from './utils/environment'
+import { getInstanceArg } from './utils/environment'
 
 export const DEFAULT_INSTANCE = 'default'
 
@@ -22,10 +21,7 @@ export interface InstanceChoice {
   reason: string
 }
 
-/**
- * --instance, else LLBOT_INSTANCE, else the instance named after `-q <uin>` if there is one (what the migration
- * makes for an old account whose settings differed), else default. See config-storage §4.
- */
+/** --instance, else LLBOT_INSTANCE, else default, as LLBot picks it (src/common/instance.ts there). */
 export function resolveInstance(argv: string[] = process.argv, env: NodeJS.ProcessEnv = process.env): InstanceChoice {
   const fromArgv = getInstanceArg(argv, {})
   const requested = fromArgv ?? getInstanceArg([], env)
@@ -35,19 +31,12 @@ export function resolveInstance(argv: string[] = process.argv, env: NodeJS.Proce
     }
     return { name: requested, reason: fromArgv !== undefined ? '--instance' : 'LLBOT_INSTANCE' }
   }
-  const uin = getSpecifiedUin(argv)
-  if (uin && isValidInstanceName(uin) && existsSync(path.join(instancesDir(), uin))) {
-    return { name: uin, reason: `-q ${uin}，且有同名实例` }
-  }
   return { name: DEFAULT_INSTANCE, reason: '默认实例' }
 }
 
 let current: InstanceChoice | undefined
 
-/**
- * The instance this process runs, fixed on first use. main.ts makes that first use after the startup migration,
- * which may create the instance `-q` points to.
- */
+/** The instance this process runs, fixed on first use. */
 export function currentInstance(): InstanceChoice {
   return current ??= resolveInstance()
 }

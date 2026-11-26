@@ -1,9 +1,10 @@
 import { deepConvertMap } from './util'
 import { randomUUID } from 'node:crypto'
-import { readFileSync, statSync } from 'node:fs'
+import { statSync } from 'node:fs'
 import path from 'node:path'
 import type { BridgeStatus, NativeQQRes, NativeQQResSendPB, NativeQQHealth, PBData, QQResourceUsage, ResListener } from './types'
-import { currentNativeQQTarget, getCdn, getSpecifiedUin, isDockerEnvironment } from '../support/utils/environment'
+import { currentNativeQQ, getCdn, isDockerEnvironment } from '../support/utils/environment'
+import { DATA_DIR } from '../support/globalVars'
 import { getNativeAddon, type NativeQQ } from '../native'
 import { authTokenUtil } from '../support/authToken'
 import { AuthTokenWatcher } from './direct-lib/authTokenWatcher'
@@ -20,7 +21,6 @@ const QUICK_LOGIN_UNSUPPORTED = '当前原生模块不支持桥接快速登录�
 export class NativeQQProtocol extends QQProtocolBase {
   private native?: NativeQQ
   private config: Record<string, unknown> = {}
-  private configuredToken = ''
   private launching?: Promise<void>
   private watcher?: AuthTokenWatcher
   private probeTimer?: NodeJS.Timeout
@@ -43,31 +43,23 @@ export class NativeQQProtocol extends QQProtocolBase {
     }
   }
 
+  /** NativeQQ's configuration, from the plugin's settings. */
   private nativeConfig(): Record<string, unknown> {
-    const target = currentNativeQQTarget()
-    let config: Record<string, unknown> = {}
-    if (target.configPath) {
-      if (!path.isAbsolute(target.configPath)) throw new Error('NativeQQ 配置文件必须使用绝对路径')
-      config = JSON.parse(readFileSync(target.configPath, 'utf8'))
-      if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error('NativeQQ 配置必须是 JSON 对象')
+    const config: Record<string, unknown> = {}
+    const { qqPath } = currentNativeQQ()
+    if (qqPath) {
+      if (!path.isAbsolute(qqPath)) throw new Error('QQ 路径必须使用绝对路径')
+      config.qq_path = qqPath
     }
-    if (target.qqPath) {
-      if (!path.isAbsolute(target.qqPath)) throw new Error('QQ 路径必须使用绝对路径')
-      config.qq_path = target.qqPath
+    if (this.loginOptions.autoLoginUin) config.quick_login_qq = this.loginOptions.autoLoginUin
+    if (isDockerEnvironment()) {
+      // QQ runs as root in the image, which Electron only allows without its sandbox
+      config.hook_mode = 'inline'
+      config.qq_args = '--no-sandbox'
+      config.work_dir = DATA_DIR
     }
-    const requestedUin = getSpecifiedUin()
-    if (requestedUin !== undefined) {
-      if (!/^[1-9][0-9]*$/.test(requestedUin)) throw new Error('快速登录 QQ 号必须是正整数')
-      config.quick_login_qq = requestedUin
-    } else if (config.quick_login_qq === undefined && this.loginOptions.autoLoginUin) {
-      // An explicit launch configuration takes precedence over the instance's preference.
-      config.quick_login_qq = this.loginOptions.autoLoginUin
-    }
-    // The Bot hosts the session itself: sub_cmd would start another Bot as a child process
-    delete config.sub_cmd
-    this.configuredToken = typeof config.auth_token === 'string' ? config.auth_token : ''
     config.auth_token = ''
-    config.cdn ||= getCdn()
+    config.cdn = getCdn()
     return config
   }
 
@@ -124,7 +116,7 @@ export class NativeQQProtocol extends QQProtocolBase {
         throw error
       }
     }, this.logger, () => this.selfInfo.online,
-    () => authTokenUtil.reload() || (process.env.AUTH_TOKEN || '').trim() || this.configuredToken)
+    () => authTokenUtil.reload() || (process.env.AUTH_TOKEN || '').trim())
     this.watcher.start()
     void this.probe(generation)
   }

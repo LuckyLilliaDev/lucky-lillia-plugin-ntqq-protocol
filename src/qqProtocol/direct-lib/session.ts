@@ -3,11 +3,9 @@ import { join, dirname } from 'node:path'
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
 import { execSync } from 'node:child_process'
 import { getHostDataDir } from '../../support/globalVars'
-import { isDockerEnvironment, getSpecifiedUin, getProtocol, type ProtocolId } from '../../support/utils/environment'
+import { isDockerEnvironment, getProtocol, type ProtocolId } from '../../support/utils/environment'
 import { loadMachineGuidSync } from './machineGuid'
 import type { SessionInfo } from './client'
-
-export { getSpecifiedUin }
 
 export interface PersistedSession {
   uin: string
@@ -110,9 +108,9 @@ export function saveSession(
   writeFileSync(path, JSON.stringify(data, null, 2))
 }
 
-/** 没指定 uin (参数或 -q)、文件不存在、解不开 (换了机器) 都返回 null, 调用方走扫码 */
+/** 没指定 uin、文件不存在、解不开 (换了机器) 都返回 null, 调用方走扫码 */
 export function loadSession(uinArg?: string): PersistedSession | null {
-  const specifiedUin = uinArg || getSpecifiedUin()
+  const specifiedUin = uinArg
   if (!specifiedUin) return null
   const path = getSessionFilePathForUin(specifiedUin)
   if (!existsSync(path)) return null

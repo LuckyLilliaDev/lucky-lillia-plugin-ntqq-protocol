@@ -3,8 +3,8 @@ import { Loader2, MonitorSmartphone } from 'lucide-react'
 import { usePluginContext } from '@luckylillia-dev/plugin-sdk/webui'
 
 interface LaunchQQProps {
-  /** What the bridge runs with, from /api/login-info: the chosen QQ, and a configuration file given at launch */
-  target?: { configPath: string; qqPath: string }
+  /** What the bridge runs with, from /api/login-info: the chosen QQ */
+  target?: { qqPath: string }
   /** Why the last session ended, from NativeQQ */
   failure?: string
   onLaunched: () => void
@@ -19,8 +19,7 @@ const LaunchQQ: React.FC<LaunchQQProps> = ({ target, failure, onLaunched }) => {
   const [found, setFound] = useState<{ detected: string | null } | null>(null)
   const [looks, setLooks] = useState(0)
   const chosen = target?.qqPath
-  // A configuration file given at launch may name the QQ itself
-  const findsItself = !chosen && !target?.configPath
+  const findsItself = !chosen
 
   useEffect(() => {
     if (!findsItself) return

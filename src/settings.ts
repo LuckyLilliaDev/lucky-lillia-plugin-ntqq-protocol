@@ -17,6 +17,10 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
   nativeQQ: Schema.object({
     qqPath: Schema.string().default('').description('QQ 可执行文件绝对路径（留空自动检测）'),
   }).description('官方 QQ 客户端桥接'),
+  signCdn: Schema.union([
+    Schema.const('cf').description('Cloudflare'),
+    Schema.const('china').description('中国大陆'),
+  ]).default('cf').hidden().description('签名服务线路'),
   autoLoginUin: Schema.string().pattern(/^(?:[1-9][0-9]*)?$/).default('').hidden()
     .description('实例启动时自动登录的 QQ 号，登录成功后设置，留空关闭'),
 }) as Schema<NTProtocolConfig>

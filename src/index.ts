@@ -5,7 +5,7 @@ import { Context } from 'cordis'
 import Database from '@cordisjs/plugin-database'
 import SQLiteDriver from '@cordisjs/plugin-database-sqlite'
 import { getDbDir, initPluginStorage } from './support/globalVars'
-import { ProtocolSelection, resolveProtocolSelection, setProtocolSelection } from './support/utils/environment'
+import { ProtocolSelection, setProtocolSelection } from './support/utils/environment'
 import { currentInstance } from './support/instance'
 import { configPaths } from './support/configPaths'
 import type { NTProtocolConfig } from './support/types'
@@ -36,8 +36,11 @@ export const name = 'nt-protocol'
 export const inject = ['config']
 export const Config = NTProtocolSchema
 
-const selectionOf = (config: NTProtocolConfig): ProtocolSelection => resolveProtocolSelection({
-  ...config, nativeQQ: { qqPath: config.nativeQQ.qqPath.trim() },
+const selectionOf = (config: NTProtocolConfig): ProtocolSelection => ({
+  mode: config.mode,
+  protocol: config.protocol,
+  nativeQQ: { qqPath: config.nativeQQ.qqPath.trim() },
+  signCdn: config.signCdn,
 })
 
 /**

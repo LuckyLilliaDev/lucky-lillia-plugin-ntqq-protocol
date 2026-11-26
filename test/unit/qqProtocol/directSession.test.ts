@@ -14,7 +14,6 @@ import { deleteMachineGuid } from '../../../src/qqProtocol/direct-lib/machineGui
 import { registerOnline, startHeartbeat } from '../../../src/qqProtocol/direct-lib/online'
 import {
   deleteSession,
-  getSpecifiedUin,
   loadSession,
   persistedToSessionInfo,
   saveSession,
@@ -52,7 +51,6 @@ vi.mock('../../../src/qqProtocol/direct-lib/session', () => ({
   deleteSession: vi.fn(),
   listAvailableSessions: vi.fn(() => []),
   persistedToSessionInfo: vi.fn(),
-  getSpecifiedUin: vi.fn(() => '123456'),
   getSessionFilePathForUin: vi.fn(),
 }))
 
@@ -598,7 +596,6 @@ describe('automatic login on instance startup', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.mocked(getSpecifiedUin).mockReturnValue(undefined)
     vi.mocked(updateAuthToken).mockResolvedValue(undefined)
     vi.mocked(loadSession).mockImplementation(uin => uin ? {
       uin, uid: `u_${uin}`, nick: 'Saved account', guid: Buffer.alloc(16).toString('hex'), savedAt: 0,
@@ -634,13 +631,6 @@ describe('automatic login on instance startup', () => {
     await protocol['onAuthTokenValid']('test-auth-token')
     expect(protocol.selfInfo).toMatchObject({ online: true, uin: '123456', uid: 'u_123456' })
     expect(online).toHaveBeenCalledOnce()
-  })
-
-  it('uses the launch account in preference to the saved automatic login', async () => {
-    prepare('123456')
-    vi.mocked(getSpecifiedUin).mockReturnValue('654321')
-    await protocol['onAuthTokenValid']('test-auth-token')
-    expect(protocol.selfInfo).toMatchObject({ online: true, uin: '654321' })
   })
 
   it('keeps a manually selected account for reconnects', async () => {

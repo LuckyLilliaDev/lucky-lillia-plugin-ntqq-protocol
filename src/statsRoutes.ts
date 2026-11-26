@@ -37,7 +37,7 @@ export function createNTStatsRoutes(ctx: Context): Hono {
           onlineSince: protocol?.onlineSince,
           ...account,
           mode,
-          // --protocol 只对直连有意义
+          // 模拟的客户端只对直连有意义
           protocol: mode === 'direct' ? getProtocol() : undefined,
           version: qq?.version ?? device?.buildVer,
           qq: qq ?? undefined,

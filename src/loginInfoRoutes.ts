@@ -1,6 +1,6 @@
 import { Context } from 'cordis'
 import { Hono } from 'hono'
-import { currentNativeQQTarget, getProtocol, isNativeQQMode, launchPins, lockedProtocol } from './support/utils/environment'
+import { currentNativeQQ, getProtocol, isNativeQQMode, lockedProtocol } from './support/utils/environment'
 import { detectQQPath } from './qqPath'
 
 /** The account and the login method as the NTQQ page shows them, and whether the protocol runs. */
@@ -23,8 +23,7 @@ export function createLoginInfoRoutes(ctx: Context): Hono {
         protocol: getProtocol(),
         // Set once the pure protocol has a client: a protocol saved after that applies on the next start
         lockedProtocol: lockedProtocol(),
-        pins: launchPins(),
-        ...nativeQQ && { nativeQQ: { ...currentNativeQQTarget(), connected: !!protocol?.get_is_connected(), ...status && { status } } },
+        ...nativeQQ && { nativeQQ: { ...currentNativeQQ(), connected: !!protocol?.get_is_connected(), ...status && { status } } },
       },
     })
   })

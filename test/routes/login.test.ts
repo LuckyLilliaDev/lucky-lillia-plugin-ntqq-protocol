@@ -3,7 +3,7 @@ import { createTestApp } from '../helpers/testApp'
 import { createMockContext } from '../helpers/mockContext'
 import { createLoginRoutes } from '../../src/loginRoutes'
 import { createLoginInfoRoutes } from '../../src/loginInfoRoutes'
-import { isNativeQQMode, launchPins, lockedProtocol } from '../../src/support/utils/environment'
+import { isNativeQQMode, lockedProtocol } from '../../src/support/utils/environment'
 import { QuickLoginUnsupportedError } from '../../src/qqProtocol/base'
 
 describe('login routes', () => {
@@ -148,15 +148,13 @@ describe('login routes', () => {
       expect(body.data.ntProtocol).toBe(false)
     })
 
-    it('says how the account logs in and what the launch fixes', async () => {
-      vi.mocked(launchPins).mockReturnValue({ protocol: { value: 'macos', by: '--protocol' } })
+    it('says how the account logs in', async () => {
       vi.mocked(lockedProtocol).mockReturnValue('linux')
       const body = await (await createTestApp(createLoginInfoRoutes(ctx)).request('/login-info')).json()
       expect(body.data).toMatchObject({
         mode: 'direct',
         protocol: 'linux',
         lockedProtocol: 'linux',
-        pins: { protocol: { value: 'macos', by: '--protocol' } },
       })
       expect(body.data.nativeQQ).toBeUndefined()
     })
@@ -166,7 +164,7 @@ describe('login routes', () => {
       ctx.qqProtocol.get_is_connected = vi.fn(() => false)
       const body = await (await createTestApp(createLoginInfoRoutes(ctx)).request('/login-info')).json()
       expect(body.data.mode).toBe('nativeqq')
-      expect(body.data.nativeQQ).toEqual({ configPath: '', qqPath: '', connected: false })
+      expect(body.data.nativeQQ).toEqual({ qqPath: '', connected: false })
     })
 
     it('passes on what NativeQQ says of the bridge', async () => {
@@ -175,7 +173,7 @@ describe('login routes', () => {
       ctx.qqProtocol.get_is_connected = vi.fn(() => false)
       ctx.qqProtocol.bridgeStatus = vi.fn(async () => status)
       const body = await (await createTestApp(createLoginInfoRoutes(ctx)).request('/login-info')).json()
-      expect(body.data.nativeQQ).toEqual({ configPath: '', qqPath: '', connected: false, status })
+      expect(body.data.nativeQQ).toEqual({ qqPath: '', connected: false, status })
     })
   })
 })

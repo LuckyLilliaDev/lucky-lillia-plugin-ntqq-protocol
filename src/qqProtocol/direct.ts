@@ -14,7 +14,6 @@ import {
   deleteSession,
   listAvailableSessions,
   persistedToSessionInfo,
-  getSpecifiedUin,
   getSessionFilePathForUin,
 } from './direct-lib'
 import type { QrCodeResult, QrPollResult } from './direct-lib'
@@ -74,7 +73,7 @@ export class DirectQQProtocol extends QQProtocolBase {
       // 异地顶号 (1001): 删 session 退回扫码, 不拿旧凭证跟对方互顶。machine_guid 不动: 换 guid 会在服务端多出一台
       // 新设备, 还会让同目录其他账号的 session 失配。其他掉线保留 session, 重连时直接恢复
       if (data.kickedType === 1001) {
-        const kickedUin = this.selfInfo.uin || this.runtimeUinOverride || getSpecifiedUin() || ''
+        const kickedUin = this.selfInfo.uin || this.runtimeUinOverride || this.loginOptions.autoLoginUin || ''
         if (kickedUin) deleteSession(kickedUin)
         this.runtimeUinOverride = null
         this.directClient?.clearSession()
@@ -290,7 +289,7 @@ export class DirectQQProtocol extends QQProtocolBase {
     await updateAuthToken(authToken).catch((e) => this.logger.warn('[Sign] updateAuthToken failed:', (e as Error).message))
     if (this.initToken !== myToken) return
 
-    const specifiedUin = this.runtimeUinOverride || getSpecifiedUin() || this.loginOptions.autoLoginUin || undefined
+    const specifiedUin = this.runtimeUinOverride || this.loginOptions.autoLoginUin || undefined
     if (specifiedUin) {
       this.logger.info('Specified login uin: %s, will try %s', specifiedUin, getSessionFilePathForUin(specifiedUin))
     } else {

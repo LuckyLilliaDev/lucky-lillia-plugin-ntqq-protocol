@@ -8,7 +8,7 @@ import LaunchQQ from './LaunchQQ'
 import ProtocolSettings from './ProtocolSettings'
 import LoginMethod from './LoginMethod'
 import QQLogin from './QQLogin'
-import { LOGIN_MODES, type BridgeStatus, type LoginMode, type ProtocolId, type ProtocolPins } from './loginOptions'
+import { LOGIN_MODES, type BridgeStatus, type LoginMode, type ProtocolId } from './loginOptions'
 
 interface LoginInfo {
   online: boolean
@@ -18,9 +18,8 @@ interface LoginInfo {
   /** The protocol service is up, and with it the login routes. */
   ntProtocol: boolean
   lockedProtocol?: ProtocolId
-  pins: ProtocolPins
   /** Only for the bridge */
-  nativeQQ?: { configPath: string; qqPath: string; connected: boolean; status?: BridgeStatus }
+  nativeQQ?: { qqPath: string; connected: boolean; status?: BridgeStatus }
 }
 
 const POLL_INTERVAL = 3000
@@ -284,7 +283,6 @@ const NTProtocolPage: React.FC = () => {
       {info && (
         <LoginMethod
           config={config}
-          pins={info.pins}
           lockedProtocol={info.lockedProtocol}
           online={info.online}
           // The account goes with the old mode: show the new mode's login rather than its card offline

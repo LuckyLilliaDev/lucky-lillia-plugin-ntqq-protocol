@@ -45,7 +45,6 @@ vi.mock('../../../src/qqProtocol/direct-lib/session', () => ({
   deleteSession: vi.fn(),
   listAvailableSessions: vi.fn(() => []),
   persistedToSessionInfo: vi.fn(),
-  getSpecifiedUin: vi.fn(() => undefined),
   getSessionFilePathForUin: vi.fn(),
 }))
 

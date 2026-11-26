@@ -1,10 +1,11 @@
 import { Context } from 'cordis'
-import { mkdtempSync, rmdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NativeQQProtocol } from '../../../src/qqProtocol/nativeQQ'
-import { currentNativeQQTarget, getSpecifiedUin, isDockerEnvironment } from '../../../src/support/utils/environment'
+import { currentNativeQQ, isDockerEnvironment } from '../../../src/support/utils/environment'
+import { DATA_DIR } from '../../../src/support/globalVars'
 import { detectQQPath } from '../../../src/qqPath'
 
 const fixture = vi.hoisted(() => ({
@@ -34,15 +35,10 @@ vi.mock('../../../src/qqProtocol/direct-lib/authTokenWatcher', () => ({
 }))
 let protocol: NativeQQProtocol
 let ctx: Context
-let configPath: string | undefined
-function useConfig(config: Record<string, unknown>): void {
-  const directory = mkdtempSync(path.join(tmpdir(), 'llbot-native-test-'))
-  configPath = path.join(directory, 'config.json')
-  writeFileSync(configPath, JSON.stringify(config), 'utf8')
-  vi.mocked(currentNativeQQTarget).mockReturnValue({ configPath, qqPath: '' })
-}
 beforeEach(() => {
   vi.useFakeTimers()
+  vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: '' })
+  vi.mocked(isDockerEnvironment).mockReturnValue(false)
   fixture.callback = undefined
   fixture.hasList = false
   fixture.hasQuickLogin = true
@@ -59,11 +55,6 @@ afterEach(async () => {
   await protocol['stop']().catch(() => {})
   vi.useRealTimers()
   vi.restoreAllMocks()
-  if (configPath) {
-    unlinkSync(configPath)
-    rmdirSync(path.dirname(configPath))
-    configPath = undefined
-  }
 })
 
 describe('NativeQQ ownership', () => {
@@ -133,21 +124,15 @@ describe('NativeQQ ownership', () => {
     expect(protocol.get_is_connected()).toBe(false)
   })
 
-  it('forwards debugger quick login and configured QQ arguments without starting a legacy subprocess', async () => {
-    useConfig({ hook_mode: 'debugger', quick_login_qq: '721011692', qq_args: ['--no-sandbox'], sub_cmd: ['legacy-bot'] })
+  it('runs QQ in the docker image as root needs it, without starting a legacy subprocess', async () => {
+    vi.mocked(isDockerEnvironment).mockReturnValue(true)
+    protocol = new NativeQQProtocol(new Context(), { autoLoginUin: '721011692' })
     await protocol['start']()
     const options = fixture.start.mock.calls[0][0]
-    expect(options.config).toMatchObject({ hook_mode: 'debugger', quick_login_qq: '721011692', qq_args: ['--no-sandbox'] })
-    expect(options.config).not.toHaveProperty('sub_cmd')
+    expect(options.config).toEqual({
+      quick_login_qq: '721011692', hook_mode: 'inline', qq_args: '--no-sandbox', work_dir: DATA_DIR, auth_token: '', cdn: 'cf',
+    })
     expect(options.subCmdArgs).toEqual([])
-    expect(options).not.toHaveProperty('qqArgs')
-  })
-
-  it('uses an explicit CLI QQ account in preference to the configuration file account', async () => {
-    useConfig({ hook_mode: 'debugger', quick_login_qq: '10001' })
-    vi.mocked(getSpecifiedUin).mockReturnValue('721011692')
-    await protocol['start']()
-    expect(fixture.start.mock.calls[0][0].config).toMatchObject({ hook_mode: 'debugger', quick_login_qq: '721011692' })
   })
 
   it('publishes online only with both identity fields and republishes after identity recovery', async () => {
@@ -391,14 +376,6 @@ describe('launching QQ', () => {
     expect(fixture.start.mock.calls[0][0].config.quick_login_qq).toBe('123456')
   })
 
-  it.each(['CLI', 'NativeQQ config'])('keeps an explicit %s account ahead of automatic login', async (source) => {
-    protocol = new NativeQQProtocol(new Context(), { autoLoginUin: '123456' })
-    if (source === 'CLI') vi.mocked(getSpecifiedUin).mockReturnValue('654321')
-    else useConfig({ quick_login_qq: '654321' })
-    await protocol['start']()
-    expect(fixture.start.mock.calls[0][0].config.quick_login_qq).toBe('654321')
-  })
-
   it('waits for the button unless an account is given, and starts one session for two presses', async () => {
     await protocol['start']()
     expect(fixture.start).not.toHaveBeenCalled()
@@ -450,10 +427,13 @@ describe('launching QQ', () => {
     expect(fixture.start).not.toHaveBeenCalled()
   })
 
-  it('names a chosen QQ that is not there, a relative one from the native directory as NativeQQ takes it', async () => {
-    useConfig({ qq_path: 'missing/QQ.exe' })
+  it('names a chosen QQ that is not there, and refuses a relative one', async () => {
+    const missing = path.resolve(tmpdir(), 'llbot-missing-qq', 'QQ.exe')
+    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: missing })
     await protocol['start']()
-    await expect(protocol.launch()).rejects.toThrow(`找不到 QQ：${path.resolve('/verified/native', 'missing/QQ.exe')} 不存在`)
+    await expect(protocol.launch()).rejects.toThrow(`找不到 QQ：${missing} 不存在`)
+    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: 'missing/QQ.exe' })
+    await expect(new NativeQQProtocol(new Context())['start']()).rejects.toThrow('QQ 路径必须使用绝对路径')
     expect(fixture.start).not.toHaveBeenCalled()
   })
 
@@ -463,7 +443,7 @@ describe('launching QQ', () => {
     writeFileSync(qq, '')
     try {
       vi.mocked(detectQQPath).mockResolvedValue(undefined)
-      useConfig({ qq_path: qq })
+      vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: qq })
       await protocol['start']()
       await protocol.launch()
       expect(fixture.start.mock.calls[0][0].config).toMatchObject({ qq_path: qq })
