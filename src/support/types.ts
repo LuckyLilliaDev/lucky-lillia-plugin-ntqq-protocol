@@ -126,7 +126,7 @@ export interface NTProtocolConfig {
   /** The QQ the bridge starts, empty: the one NativeQQ finds */
   nativeQQ: { qqPath: string }
   /** The signing service's CDN: cf (Cloudflare), or china for mainland China */
-  signCdn: 'cf' | 'china'
+  signCDN: 'cf' | 'china'
   /** The account to log in when this instance starts; empty disables automatic login. */
   autoLoginUin: string
 }

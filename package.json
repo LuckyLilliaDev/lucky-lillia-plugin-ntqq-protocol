@@ -45,46 +45,13 @@
     "description": "扫码、快速登录或桥接官方 QQ 客户端，为 OneBot、Milky、Satori 和 WebQQ 提供 NTQQ 账号服务",
     "title": "NTQQ 协议",
     "webui": "./lib/client/index.js",
-    "args": {
-      "--ntqq-mode": {
-        "path": "mode",
-        "values": {
-          "native": "nativeqq"
-        }
-      },
-      "--ntqq-protocol": {
-        "path": "protocol",
-        "values": {
-          "win": "windows",
-          "mac": "macos",
-          "darwin": "macos",
-          "wat": "watch"
-        }
-      },
-      "--ntqq-sign-cdn": "signCdn",
-      "--ntqq-account": "autoLoginUin",
-      "--ntqq-qq-path": "nativeQQ.qqPath"
-    },
-    "env": {
-      "NTQQ_MODE": {
-        "path": "mode",
-        "values": {
-          "native": "nativeqq"
-        }
-      },
-      "NTQQ_PROTOCOL": {
-        "path": "protocol",
-        "values": {
-          "win": "windows",
-          "mac": "macos",
-          "darwin": "macos",
-          "wat": "watch"
-        }
-      },
-      "NTQQ_SIGN_CDN": "signCdn",
-      "NTQQ_ACCOUNT": "autoLoginUin",
-      "NTQQ_QQ_PATH": "nativeQQ.qqPath"
-    }
+    "launch": [
+      { "field": "mode", "arg": "--ntqq-mode", "env": "NTQQ_MODE", "values": { "native": "nativeqq" } },
+      { "field": "protocol", "arg": "--ntqq-protocol", "env": "NTQQ_PROTOCOL", "values": { "win": "windows", "mac": "macos", "darwin": "macos", "wat": "watch" } },
+      { "field": "signCDN", "arg": "--ntqq-sign-cdn", "env": "NTQQ_SIGN_CDN" },
+      { "field": "autoLoginUin", "arg": "--ntqq-account", "env": "NTQQ_ACCOUNT" },
+      { "field": "nativeQQ.qqPath", "arg": "--ntqq-qq-path", "env": "NTQQ_QQ_PATH" }
+    ]
   },
   "exports": {
     ".": {

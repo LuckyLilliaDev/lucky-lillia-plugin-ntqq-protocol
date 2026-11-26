@@ -40,7 +40,7 @@ const selectionOf = (config: NTProtocolConfig): ProtocolSelection => ({
   mode: config.mode,
   protocol: config.protocol,
   nativeQQ: { qqPath: config.nativeQQ.qqPath.trim() },
-  signCdn: config.signCdn,
+  signCDN: config.signCDN,
 })
 
 /**

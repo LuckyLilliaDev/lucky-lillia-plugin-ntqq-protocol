@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { describeMethod, pendingProtocol } from '../../src/client/loginOptions'
 import type { NTProtocolConfig } from '../../src/support/types'
 
-const saved: NTProtocolConfig = { mode: 'direct', protocol: 'macos', nativeQQ: { qqPath: '' }, signCdn: 'cf', autoLoginUin: '' }
+const saved: NTProtocolConfig = { mode: 'direct', protocol: 'macos', nativeQQ: { qqPath: '' }, signCDN: 'cf', autoLoginUin: '' }
 
 describe('login method', () => {
   it('reads as one line', () => {

@@ -21,7 +21,7 @@ export interface ProtocolSelection {
     mode: ProtocolMode
     protocol: ProtocolId
     nativeQQ: { qqPath: string }
-    signCdn: Cdn
+    signCDN: Cdn
 }
 
 let selection: ProtocolSelection | undefined
@@ -72,9 +72,9 @@ export function getInstanceArg(argv: string[] = process.argv, env: NodeJS.Proces
     return env.LLBOT_INSTANCE || undefined
 }
 
-/** The signing service's CDN, from the settings (`signCdn`). cf = api-auth.luckylillia.com, china = llbot-api-auth.wumiao.wang */
+/** The signing service's CDN, from the settings (`signCDN`). cf = api-auth.luckylillia.com, china = llbot-api-auth.wumiao.wang */
 export function getCdn(): Cdn {
-    return selection?.signCdn === 'china' ? 'china' : 'cf'
+    return selection?.signCDN === 'china' ? 'china' : 'cf'
 }
 
 /** The manager frontend, on a different domain from the API host the native signing module talks to. */

@@ -17,7 +17,7 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
   nativeQQ: Schema.object({
     qqPath: Schema.string().default('').description('QQ 可执行文件绝对路径（留空自动检测）'),
   }).description('官方 QQ 客户端桥接'),
-  signCdn: Schema.union([
+  signCDN: Schema.union([
     Schema.const('cf').description('Cloudflare'),
     Schema.const('china').description('中国大陆'),
   ]).default('cf').hidden().description('签名服务线路'),
