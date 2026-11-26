@@ -163,7 +163,7 @@ describe('login routes', () => {
       vi.mocked(isNativeQQMode).mockReturnValue(true)
       ctx.qqProtocol.get_is_connected = vi.fn(() => false)
       const body = await (await createTestApp(createLoginInfoRoutes(ctx)).request('/login-info')).json()
-      expect(body.data.mode).toBe('nativeqq')
+      expect(body.data.mode).toBe('native')
       expect(body.data.nativeQQ).toEqual({ qqPath: '', connected: false })
     })
 

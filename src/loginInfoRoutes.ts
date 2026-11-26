@@ -18,7 +18,7 @@ export function createLoginInfoRoutes(ctx: Context): Hono {
       success: true,
       data: {
         ...account,
-        mode: nativeQQ ? 'nativeqq' : 'direct',
+        mode: nativeQQ ? 'native' : 'direct',
         ntProtocol: !!protocol,
         protocol: getProtocol(),
         // Set once the pure protocol has a client: a protocol saved after that applies on the next start

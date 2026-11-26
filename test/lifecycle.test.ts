@@ -20,7 +20,7 @@ vi.mock('../src/qqProtocol', async () => {
       return () => { state.stops++ }
     }
   }
-  return { DirectQQProtocolClient: fake('direct'), NativeQQProtocolClient: fake('nativeqq') }
+  return { DirectQQProtocolClient: fake('direct'), NativeQQProtocolClient: fake('native') }
 })
 
 const contexts: Context[] = []
@@ -106,7 +106,7 @@ describe('standalone NTQQ plugin lifecycle', () => {
     await entry.dispose()
   })
 
-  it.each(['direct', 'nativeqq'])('changes automatic login without interrupting %s and uses it on the next mount', async mode => {
+  it.each(['direct', 'native'])('changes automatic login without interrupting %s and uses it on the next mount', async mode => {
     const ctx = await createContext()
     const entry = await ctx.plugin(NTProtocol, { mode })
     await vi.waitFor(() => expect(state.starts).toEqual([{ mode, uin: '' }]))
@@ -125,11 +125,11 @@ describe('standalone NTQQ plugin lifecycle', () => {
     await vi.waitFor(() => expect(state.starts).toHaveLength(1))
     await entry.update({ mode: 'direct', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
     expect(state.starts).toHaveLength(1)
-    await entry.update({ mode: 'nativeqq', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
+    await entry.update({ mode: 'native', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
     await vi.waitFor(() => expect(state.starts).toHaveLength(2))
-    await entry.update({ mode: 'nativeqq', protocol: 'linux', nativeQQ: { qqPath: '/other/QQ' } })
+    await entry.update({ mode: 'native', protocol: 'linux', nativeQQ: { qqPath: '/other/QQ' } })
     expect(state.starts).toHaveLength(2)
-    await entry.update({ mode: 'nativeqq', nativeQQ: { qqPath: '/QQ' } })
+    await entry.update({ mode: 'native', nativeQQ: { qqPath: '/QQ' } })
     await vi.waitFor(() => expect(state.starts).toHaveLength(3))
   })
 })

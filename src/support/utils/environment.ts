@@ -8,7 +8,7 @@ export function isDockerEnvironment(): boolean {
     }
 }
 
-export type ProtocolMode = 'direct' | 'nativeqq'
+export type ProtocolMode = 'direct' | 'native'
 export type ProtocolId = 'linux' | 'windows' | 'macos' | 'watch'
 export type Cdn = 'cf' | 'china'
 
@@ -46,7 +46,7 @@ export function lockedProtocol(): ProtocolId | undefined {
 }
 
 export function isNativeQQMode(): boolean {
-    return selection?.mode === 'nativeqq'
+    return selection?.mode === 'native'
 }
 
 /** The QQ the bridge starts; empty: the one NativeQQ finds. */
@@ -87,6 +87,6 @@ export function getAuthTokenPageUrl(cdn: Cdn = getCdn()): string {
  * linux (its default). NativeQQ runs with linux (highway appId, SsoInfoSync).
  */
 export function getProtocol(): ProtocolId {
-    if (selection?.mode === 'nativeqq') return 'linux'
+    if (selection?.mode === 'native') return 'linux'
     return locked ?? selection?.protocol ?? 'linux'
 }

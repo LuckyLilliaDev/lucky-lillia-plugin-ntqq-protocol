@@ -6,7 +6,7 @@ import {
   describeMethod, LOGIN_MODES, LoginMode, pendingProtocol, protocolLabel, PROTOCOLS, ProtocolId,
 } from './loginOptions'
 
-const ICONS = { direct: Cpu, nativeqq: MonitorSmartphone }
+const ICONS = { direct: Cpu, native: MonitorSmartphone }
 
 /** GET /api/nativeqq/qq-path: the QQ NativeQQ finds by itself, and the bot machine's platform */
 interface QQPathFound {
@@ -102,7 +102,7 @@ const LoginMethod: React.FC<LoginMethodProps> = ({ config, lockedProtocol, onlin
           )}
           {online && (
             <div className="text-xs text-theme-muted mt-1">
-              {current.mode === 'nativeqq' ? '已登录：在 QQ 客户端里退出登录后才能更改' : '已登录：退出登录后才能更改'}
+              {current.mode === 'native' ? '已登录：在 QQ 客户端里退出登录后才能更改' : '已登录：退出登录后才能更改'}
             </div>
           )}
         </div>

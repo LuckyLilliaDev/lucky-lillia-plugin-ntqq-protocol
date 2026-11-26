@@ -120,7 +120,7 @@ export interface QQOfficialConfig {
 /** builtin:nt-protocol: how the scanned account logs in */
 export interface NTProtocolConfig {
   /** The pure protocol, or NativeQQ bridging an official QQ client */
-  mode: 'direct' | 'nativeqq'
+  mode: 'direct' | 'native'
   /** The QQ client the pure protocol passes for; NativeQQ ignores it */
   protocol: 'linux' | 'macos' | 'windows' | 'watch'
   /** The QQ the bridge starts, empty: the one NativeQQ finds */

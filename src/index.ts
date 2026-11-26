@@ -65,11 +65,11 @@ export async function apply(ctx: Context, config: NTProtocolConfig) {
   ctx.on('internal/update', (next: NTProtocolConfig, restart) => {
     const updated = selectionOf(next)
     const moved = updated.nativeQQ.qqPath !== selection.nativeQQ.qqPath
-    if (updated.mode !== selection.mode || (updated.mode === 'nativeqq' && moved)) return restart()
+    if (updated.mode !== selection.mode || (updated.mode === 'native' && moved)) return restart()
     setProtocolSelection(selection = updated)
   })
   // Read on the next protocol start; saving automatic login must not interrupt the current account.
-  ctx.plugin(selection.mode === 'nativeqq' ? NativeQQProtocolClient : DirectQQProtocolClient, {
+  ctx.plugin(selection.mode === 'native' ? NativeQQProtocolClient : DirectQQProtocolClient, {
     autoLoginUin: config.autoLoginUin,
   })
   ctx.plugin(NTLoginApi)

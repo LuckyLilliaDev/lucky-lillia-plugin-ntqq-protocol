@@ -27,7 +27,7 @@ export function createNTStatsRoutes(ctx: Context): Hono {
       }
       const qq = await protocol?.getQQResourceUsage()
       const device = await ctx.get('ntSystemApi')?.getDeviceInfo().catch(() => undefined)
-      const mode = isNativeQQMode() ? 'nativeqq' : 'direct'
+      const mode = isNativeQQMode() ? 'native' : 'direct'
       return c.json({
         success: true,
         data: {

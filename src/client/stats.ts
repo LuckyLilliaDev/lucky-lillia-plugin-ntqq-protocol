@@ -7,7 +7,7 @@ export interface NTStats {
   nick: string
   /** When the account came online (ms); kept across reconnects, missing while offline */
   onlineSince?: number
-  mode: 'direct' | 'nativeqq'
+  mode: 'direct' | 'native'
   protocol?: string
   version?: string
   friendCount?: number

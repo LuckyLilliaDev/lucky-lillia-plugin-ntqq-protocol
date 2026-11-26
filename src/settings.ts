@@ -6,8 +6,8 @@ import type { NTProtocolConfig } from './support/types'
 export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
   mode: Schema.union([
     Schema.const('direct').description('纯协议'),
-    Schema.const('nativeqq').description('官方 QQ 客户端桥接'),
-  ]).default('nativeqq').description('登录方式'),
+    Schema.const('native').description('官方 QQ 客户端桥接'),
+  ]).default('native').description('登录方式'),
   protocol: Schema.union([
     Schema.const('linux').description('Linux'),
     Schema.const('macos').description('macOS'),

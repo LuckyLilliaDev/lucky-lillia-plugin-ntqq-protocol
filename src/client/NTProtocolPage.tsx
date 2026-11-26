@@ -70,9 +70,9 @@ const NTProtocolPage: React.FC = () => {
       ])
       if (stopped) return
       if (login.status === 'fulfilled') setInfo(login.value)
-      const bridge = login.status === 'fulfilled' && login.value.mode === 'nativeqq' ? login.value.nativeQQ?.status : undefined
+      const bridge = login.status === 'fulfilled' && login.value.mode === 'native' ? login.value.nativeQQ?.status : undefined
       // Before the bridge's session runs it has no token watcher, and the token status means nothing
-      const bridgeIdle = login.status === 'fulfilled' && login.value.mode === 'nativeqq' && bridge?.session !== 'running'
+      const bridgeIdle = login.status === 'fulfilled' && login.value.mode === 'native' && bridge?.session !== 'running'
       if (token.status === 'fulfilled' && token.value) {
         const status = token.value
         setTokenStatus(status)
@@ -137,9 +137,9 @@ const NTProtocolPage: React.FC = () => {
   )
 
   const account = info?.online ? { uin: info.uin, nick: info.nick } : known
-  const bridge = info?.mode === 'nativeqq' ? info.nativeQQ?.status : undefined
+  const bridge = info?.mode === 'native' ? info.nativeQQ?.status : undefined
   // Without a session nothing reconnects the bridge's account: the page offers to start QQ instead of its card
-  const bridgeDown = info?.mode === 'nativeqq' && (bridge ? bridge.session !== 'running' : !info.nativeQQ?.connected)
+  const bridgeDown = info?.mode === 'native' && (bridge ? bridge.session !== 'running' : !info.nativeQQ?.connected)
   let body: React.ReactNode
   // The login waits on the token: the form takes the whole page then
   let tokenFormShown = false
@@ -205,7 +205,7 @@ const NTProtocolPage: React.FC = () => {
         )}
 
         <div className="mt-6 flex items-center justify-end gap-3">
-          {info.mode === 'nativeqq' ? (
+          {info.mode === 'native' ? (
             <p className="text-xs text-theme-muted">官方 QQ 客户端桥接的账号在 QQ 客户端里登录和退出</p>
           ) : confirmLogout ? (
             <>

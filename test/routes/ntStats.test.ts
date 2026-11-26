@@ -57,7 +57,7 @@ describe('GET /ntqq/stats', () => {
     expect((await stats()).protocol).toBe('macos')
     vi.mocked(isNativeQQMode).mockReturnValue(true)
     const data = await stats()
-    expect(data.mode).toBe('nativeqq')
+    expect(data.mode).toBe('native')
     expect(data.protocol).toBeUndefined()
   })
 })

@@ -65,7 +65,7 @@ export const AccountCard: React.FC = () => {
   const ctx = usePluginContext()
   const stats = useNTStats()
   if (!stats) return null
-  const method = stats.mode === 'nativeqq' ? '官方 QQ 客户端桥接' : `纯协议 · ${protocolLabel(stats.protocol ?? 'linux')}`
+  const method = stats.mode === 'native' ? '官方 QQ 客户端桥接' : `纯协议 · ${protocolLabel(stats.protocol ?? 'linux')}`
   return (
     <div className="@container">
       <div className="flex items-center gap-3 mb-4">
