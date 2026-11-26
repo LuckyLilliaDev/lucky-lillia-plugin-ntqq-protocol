@@ -23,7 +23,7 @@ export function createLoginInfoRoutes(ctx: Context): Hono {
         protocol: getProtocol(),
         // Set once the pure protocol has a client: a protocol saved after that applies on the next start
         lockedProtocol: lockedProtocol(),
-        ...nativeQQ && { nativeQQ: { ...currentNativeQQ(), connected: !!protocol?.get_is_connected(), ...status && { status } } },
+        ...nativeQQ && { nativeQQ: { qqPath: currentNativeQQ().qqPath, connected: !!protocol?.get_is_connected(), ...status && { status } } },
       },
     })
   })

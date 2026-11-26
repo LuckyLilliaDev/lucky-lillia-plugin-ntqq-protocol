@@ -46,15 +46,16 @@ export class NativeQQProtocol extends QQProtocolBase {
   /** NativeQQ's configuration, from the plugin's settings. */
   private nativeConfig(): Record<string, unknown> {
     const config: Record<string, unknown> = {}
-    const { qqPath } = currentNativeQQ()
+    const { qqPath, hookMode } = currentNativeQQ()
     if (qqPath) {
       if (!path.isAbsolute(qqPath)) throw new Error('QQ 路径必须使用绝对路径')
       config.qq_path = qqPath
     }
     if (this.loginOptions.autoLoginUin) config.quick_login_qq = this.loginOptions.autoLoginUin
+    if (hookMode) config.hook_mode = hookMode
     if (isDockerEnvironment()) {
+      config.hook_mode ??= 'inline'
       // QQ runs as root in the image, which Electron only allows without its sandbox
-      config.hook_mode = 'inline'
       config.qq_args = '--no-sandbox'
       config.work_dir = DATA_DIR
     }

@@ -50,7 +50,8 @@
       { "field": "protocol", "arg": "--ntqq-protocol", "env": "NTQQ_PROTOCOL", "aliases": { "win": "windows", "mac": "macos", "darwin": "macos", "wat": "watch" } },
       { "field": "signCDN", "arg": "--ntqq-sign-cdn", "env": "NTQQ_SIGN_CDN" },
       { "field": "autoLoginUin", "arg": "--ntqq-account", "env": "NTQQ_ACCOUNT" },
-      { "field": "nativeQQ.qqPath", "arg": "--ntqq-qq-path", "env": "NTQQ_QQ_PATH" }
+      { "field": "nativeQQ.qqPath", "arg": "--ntqq-qq-path", "env": "NTQQ_QQ_PATH" },
+      { "field": "nativeQQ.hookMode", "arg": "--ntqq-hook-mode", "env": "NTQQ_HOOK_MODE" }
     ]
   },
   "exports": {

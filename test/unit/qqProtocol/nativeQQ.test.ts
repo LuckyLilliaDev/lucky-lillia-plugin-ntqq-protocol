@@ -37,7 +37,7 @@ let protocol: NativeQQProtocol
 let ctx: Context
 beforeEach(() => {
   vi.useFakeTimers()
-  vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: '' })
+  vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: '', hookMode: '' })
   vi.mocked(isDockerEnvironment).mockReturnValue(false)
   fixture.callback = undefined
   fixture.hasList = false
@@ -133,6 +133,18 @@ describe('NativeQQ ownership', () => {
       quick_login_qq: '721011692', hook_mode: 'inline', qq_args: '--no-sandbox', work_dir: DATA_DIR, auth_token: '', cdn: 'cf',
     })
     expect(options.subCmdArgs).toEqual([])
+  })
+
+  it('hooks QQ the way the settings say, in docker as well', async () => {
+    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: '', hookMode: 'debugger' })
+    protocol = new NativeQQProtocol(new Context(), { autoLoginUin: '721011692' })
+    await protocol['start']()
+    expect(fixture.start.mock.calls[0][0].config).toEqual({ quick_login_qq: '721011692', hook_mode: 'debugger', auth_token: '', cdn: 'cf' })
+    await protocol['stop']()
+    vi.mocked(isDockerEnvironment).mockReturnValue(true)
+    protocol = new NativeQQProtocol(new Context(), { autoLoginUin: '721011692' })
+    await protocol['start']()
+    expect(fixture.start.mock.calls[1][0].config).toMatchObject({ hook_mode: 'debugger', qq_args: '--no-sandbox' })
   })
 
   it('publishes online only with both identity fields and republishes after identity recovery', async () => {
@@ -429,10 +441,10 @@ describe('launching QQ', () => {
 
   it('names a chosen QQ that is not there, and refuses a relative one', async () => {
     const missing = path.resolve(tmpdir(), 'llbot-missing-qq', 'QQ.exe')
-    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: missing })
+    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: missing, hookMode: '' })
     await protocol['start']()
     await expect(protocol.launch()).rejects.toThrow(`找不到 QQ：${missing} 不存在`)
-    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: 'missing/QQ.exe' })
+    vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: 'missing/QQ.exe', hookMode: '' })
     await expect(new NativeQQProtocol(new Context())['start']()).rejects.toThrow('QQ 路径必须使用绝对路径')
     expect(fixture.start).not.toHaveBeenCalled()
   })
@@ -443,7 +455,7 @@ describe('launching QQ', () => {
     writeFileSync(qq, '')
     try {
       vi.mocked(detectQQPath).mockResolvedValue(undefined)
-      vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: qq })
+      vi.mocked(currentNativeQQ).mockReturnValue({ qqPath: qq, hookMode: '' })
       await protocol['start']()
       await protocol.launch()
       expect(fixture.start.mock.calls[0][0].config).toMatchObject({ qq_path: qq })

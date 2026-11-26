@@ -39,7 +39,7 @@ export const Config = NTProtocolSchema
 const selectionOf = (config: NTProtocolConfig): ProtocolSelection => ({
   mode: config.mode,
   protocol: config.protocol,
-  nativeQQ: { qqPath: config.nativeQQ.qqPath.trim() },
+  nativeQQ: { qqPath: config.nativeQQ.qqPath.trim(), hookMode: config.nativeQQ.hookMode.trim() },
   signCDN: config.signCDN,
 })
 
@@ -64,7 +64,7 @@ export async function apply(ctx: Context, config: NTProtocolConfig) {
   // reads its protocol once, as its client is created: before that a new one just applies, after it waits for a restart
   ctx.on('internal/update', (next: NTProtocolConfig, restart) => {
     const updated = selectionOf(next)
-    const moved = updated.nativeQQ.qqPath !== selection.nativeQQ.qqPath
+    const moved = updated.nativeQQ.qqPath !== selection.nativeQQ.qqPath || updated.nativeQQ.hookMode !== selection.nativeQQ.hookMode
     if (updated.mode !== selection.mode || (updated.mode === 'native' && moved)) return restart()
     setProtocolSelection(selection = updated)
   })

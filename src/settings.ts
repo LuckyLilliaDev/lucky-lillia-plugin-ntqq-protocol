@@ -16,6 +16,7 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
   ]).default('linux').description('纯协议模拟的 QQ 客户端'),
   nativeQQ: Schema.object({
     qqPath: Schema.string().default('').description('QQ 可执行文件绝对路径（留空自动检测）'),
+    hookMode: Schema.string().default('').hidden().description('NativeQQ 注入方式（留空：docker 里用 inline，其他用 NativeQQ 的默认）'),
   }).description('官方 QQ 客户端桥接'),
   signCDN: Schema.union([
     Schema.const('cf').description('Cloudflare'),

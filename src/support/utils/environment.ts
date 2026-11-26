@@ -20,7 +20,7 @@ export type Cdn = 'cf' | 'china'
 export interface ProtocolSelection {
     mode: ProtocolMode
     protocol: ProtocolId
-    nativeQQ: { qqPath: string }
+    nativeQQ: { qqPath: string; hookMode: string }
     signCDN: Cdn
 }
 
@@ -49,9 +49,9 @@ export function isNativeQQMode(): boolean {
     return selection?.mode === 'native'
 }
 
-/** The QQ the bridge starts; empty: the one NativeQQ finds. */
-export function currentNativeQQ(): { qqPath: string } {
-    return selection?.nativeQQ ?? { qqPath: '' }
+/** The QQ the bridge starts (empty: the one NativeQQ finds), and how NativeQQ hooks it (empty: its default). */
+export function currentNativeQQ(): { qqPath: string; hookMode: string } {
+    return selection?.nativeQQ ?? { qqPath: '', hookMode: '' }
 }
 
 /**
