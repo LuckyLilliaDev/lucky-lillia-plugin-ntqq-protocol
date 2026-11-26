@@ -2,7 +2,7 @@ import path from 'node:path'
 import { FFMPEG_PLUGIN, FFmpegUnavailableError, getFFmpegAddon, tryGetFFmpegAddon, type AudioFormat } from './ffmpeg'
 import { isSilk } from './audioFormat'
 import fsPromise from 'node:fs/promises'
-import { TEMP_DIR } from '../globalVars'
+import { getTempDir } from '../globalVars'
 import { randomUUID } from 'node:crypto'
 import { Context } from 'cordis'
 
@@ -32,7 +32,7 @@ export async function encodeSilk(ctx: Context, filePath: string) {
   }
 
   const native = getSilkAddon(ctx)
-  const output = path.join(TEMP_DIR, randomUUID() + '.silk')
+  const output = path.join(getTempDir(), randomUUID() + '.silk')
   ctx.logger.info(`语音文件 ${filePath} 需要转换成 SILK`)
   try {
     await native.transcodeAudio(filePath, output, { format: 'silk' })
@@ -46,7 +46,7 @@ export async function encodeSilk(ctx: Context, filePath: string) {
 
 export async function decodeSilk(ctx: Context, inputFilePath: string, outFormat: AudioFormat) {
   const native = getSilkAddon(ctx)
-  const output = path.join(TEMP_DIR, randomUUID() + '.' + outFormat)
+  const output = path.join(getTempDir(), randomUUID() + '.' + outFormat)
   try {
     await native.transcodeAudio(inputFilePath, output, { format: outFormat })
     return output

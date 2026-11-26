@@ -4,7 +4,7 @@ import fsPromise from 'node:fs/promises'
 import path from 'node:path'
 import * as fileType from 'file-type'
 import { imageSizeFromFile } from '../image-size/lib/fromFile'
-import { TEMP_DIR } from '../globalVars'
+import { getTempDir } from '../globalVars'
 import { randomUUID, createHash } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { Context } from 'cordis'
@@ -120,12 +120,12 @@ export async function uri2local(ctx: Context, uri: string, needExt?: boolean, fi
     try {
       const res = await fetchFile(uri)
       if (fileName) {
-        const filePath = path.join(TEMP_DIR, randomUUID())
+        const filePath = path.join(getTempDir(), randomUUID())
         await fsPromise.writeFile(filePath, res.data)
         return { success: true, errMsg: '', fileName, path: filePath, isLocal: false }
       } else {
         let fileName = randomUUID()
-        let filePath = path.join(TEMP_DIR, fileName)
+        let filePath = path.join(getTempDir(), fileName)
         await fsPromise.writeFile(filePath, res.data)
         if (needExt) {
           const ext = (await getFileType(filePath)).ext
@@ -144,7 +144,7 @@ export async function uri2local(ctx: Context, uri: string, needExt?: boolean, fi
 
   if (type === FileUriType.OneBotBase64) {
     let filename = randomUUID()
-    let filePath = path.join(TEMP_DIR, filename)
+    let filePath = path.join(getTempDir(), filename)
     const base64 = uri.replace(/^base64:\/\//, '')
     await fsPromise.writeFile(filePath, base64, 'base64')
     if (needExt) {
@@ -162,7 +162,7 @@ export async function uri2local(ctx: Context, uri: string, needExt?: boolean, fi
     if (capture) {
       let filename = randomUUID()
       const [, _type, base64] = capture
-      let filePath = path.join(TEMP_DIR, filename)
+      let filePath = path.join(getTempDir(), filename)
       await fsPromise.writeFile(filePath, base64, 'base64')
       if (needExt) {
         const ext = (await getFileType(filePath)).ext

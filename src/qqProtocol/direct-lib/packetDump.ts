@@ -1,6 +1,6 @@
 import { appendFileSync, existsSync, mkdirSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import { DATA_DIR } from '../../support/globalVars'
+import { getHostDataDir } from '../../support/globalVars'
 
 /**
  * SSO packet capture with `--dump-packets[=<file.csv>]`. Bodies in the CSV are plaintext (outbound before TEA,
@@ -16,19 +16,17 @@ const PACKET_HEADER =
   'inner_enc,inner_key_name,inner_key_hex,extra_layers,body_len,body_hex\n'
 const KEY_HEADER = 'ts,name,len,hex,ascii,note\n'
 
-function parseTargetPath(): string | null {
+function parseFlagSpec(): { explicit?: string } | null {
   for (const a of process.argv) {
-    if (a === FLAG) {
-      const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '')
-      return join(DATA_DIR, 'packets', `sso-${stamp}.csv`)
-    }
-    if (a.startsWith(`${FLAG}=`)) return resolve(a.slice(FLAG.length + 1))
+    if (a === FLAG) return {}
+    if (a.startsWith(`${FLAG}=`)) return { explicit: resolve(a.slice(FLAG.length + 1)) }
   }
   return null
 }
 
-const target = parseTargetPath()
-const keyTarget = target ? target.replace(/\.csv$/i, '') + '-keys.csv' : null
+const flagSpec = parseFlagSpec()
+let target: string | null = null
+let keyTarget: string | null = null
 
 let ready = false
 let idx = 0
@@ -36,12 +34,15 @@ let idx = 0
 const live = new Map<string, string>()
 
 export function isPacketDumpEnabled(): boolean {
-  return target !== null
+  return flagSpec !== null
 }
 
 function ensureReady(): void {
-  if (ready || !target || !keyTarget) return
+  if (ready || !flagSpec) return
   ready = true
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\..+$/, '')
+  target = flagSpec.explicit ?? join(getHostDataDir(), 'packets', `sso-${stamp}.csv`)
+  keyTarget = target.replace(/\.csv$/i, '') + '-keys.csv'
   const dir = dirname(target)
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   appendFileSync(target, PACKET_HEADER)

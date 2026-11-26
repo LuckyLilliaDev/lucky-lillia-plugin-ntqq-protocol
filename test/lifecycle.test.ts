@@ -5,7 +5,7 @@ import { Status } from '@satorijs/protocol'
 import { createTestApp } from '@luckylillia-dev/plugin-sdk/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as NTProtocol from '../src/index'
-import { DATA_DIR } from '../src/support/globalVars'
+import { getDbDir } from '../src/support/globalVars'
 
 const state = vi.hoisted(() => ({ starts: [] as { mode: string; uin: string }[], stops: 0 }))
 vi.mock('../src/qqProtocol', async () => {
@@ -73,7 +73,7 @@ describe('standalone NTQQ plugin lifecycle', () => {
     expect(bot.user.id).toBe('10001')
     expect(ctx.reflect._getImpl('store') === store).toBe(false)
     expect(ctx.reflect._getImpl('ntFriendApi') === friends).toBe(false)
-    for (const uin of ['10001', '10002']) expect(existsSync(path.join(DATA_DIR, 'database', uin + '.v3.db'))).toBe(true)
+    for (const uin of ['10001', '10002']) expect(existsSync(path.join(getDbDir(), uin + '.v3.db'))).toBe(true)
     Object.assign(ctx.get('qqProtocol')!.selfInfo, { uin: '', uid: '', nick: '', online: false })
     await ctx.parallel('qq/logout')
     expect(ctx.bots.size).toBe(0)

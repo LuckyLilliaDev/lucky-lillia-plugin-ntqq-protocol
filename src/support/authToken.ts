@@ -1,20 +1,24 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { DATA_DIR } from './globalVars'
+import { getHostDataDir } from './globalVars'
 import { isDevMode } from './utils/environment'
 
-/** Retains the existing token location when upgrading from the bundled protocol. */
+/** Stored under the plugin's cross-instance data directory (`ctx.storage.dir('host')`). */
 export class AuthTokenUtil {
-  constructor(private readonly file: string) {}
-  getPath() { return path.resolve(this.file) }
+  private readonly resolvePath: () => string
+  constructor(file: string | (() => string)) {
+    this.resolvePath = typeof file === 'function' ? file : () => file
+  }
+  getPath() { return path.resolve(this.resolvePath()) }
   getToken() {
-    try { return fs.readFileSync(this.file, 'utf8').trim() }
+    try { return fs.readFileSync(this.resolvePath(), 'utf8').trim() }
     catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return ''; throw error }
   }
   reload() { return this.getToken() }
   setToken(token: string) {
-    fs.mkdirSync(path.dirname(this.file), { recursive: true })
-    fs.writeFileSync(this.file, token.trim(), { encoding: 'utf8', mode: 0o600 })
+    const file = this.resolvePath()
+    fs.mkdirSync(path.dirname(file), { recursive: true })
+    fs.writeFileSync(file, token.trim(), { encoding: 'utf8', mode: 0o600 })
   }
 }
-export const authTokenUtil = new AuthTokenUtil(path.join(DATA_DIR, isDevMode() ? 'auth_token.dev.txt' : 'auth_token.txt'))
+export const authTokenUtil = new AuthTokenUtil(() => path.join(getHostDataDir(), isDevMode() ? 'auth_token.dev.txt' : 'auth_token.txt'))

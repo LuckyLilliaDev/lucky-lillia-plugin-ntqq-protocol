@@ -9,12 +9,34 @@ vi.mock('../src/support/globalVars', async () => {
   const os = await import('node:os')
   const path = await import('node:path')
   fixture.dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ntqq-test-'))
+  let hostDataDir = fixture.dir
+  let tempDir = path.join(fixture.dir, 'temp')
+  const getHostDataDir = () => hostDataDir
+  const getDbDir = () => path.join(hostDataDir, 'database')
+  const getTempDir = () => tempDir
   const ensureRuntimeDirectories = () => {
-    for (const name of ['temp', 'database']) fs.mkdirSync(path.join(fixture.dir, name), { recursive: true })
+    for (const dir of [hostDataDir, getDbDir(), tempDir]) fs.mkdirSync(dir, { recursive: true })
+  }
+  const initPluginStorage = async (ctx: { storage?: { dir(scope?: string): Promise<string> } }) => {
+    if (ctx?.storage) {
+      hostDataDir = await ctx.storage.dir('host').catch(() => fixture.dir)
+      tempDir = path.join(await ctx.storage.dir('global').catch(() => fixture.dir), 'temp')
+    }
+    ensureRuntimeDirectories()
   }
   ensureRuntimeDirectories()
-  return { DATA_DIR: fixture.dir, TEMP_DIR: path.join(fixture.dir, 'temp'), LOG_DIR: path.join(fixture.dir, 'logs'),
-    dbDir: path.join(fixture.dir, 'database'), getFixedDataDir: () => fixture.dir, ensureRuntimeDirectories }
+  return {
+    DATA_DIR: fixture.dir,
+    LOG_DIR: path.join(fixture.dir, 'logs'),
+    STATE_DIR: path.join(fixture.dir, 'state'),
+    getHostDataDir,
+    getDbDir,
+    getTempDir,
+    getFixedDataDir: () => fixture.dir,
+    ensureRuntimeDirectories,
+    initPluginStorage,
+    migrateLegacyProtocolData: () => false,
+  }
 })
 vi.mock('../src/support/utils/environment', async original => ({
   ...await original<object>(),

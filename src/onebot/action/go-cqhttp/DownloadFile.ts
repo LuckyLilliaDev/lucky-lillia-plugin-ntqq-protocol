@@ -4,7 +4,7 @@ import path from 'node:path'
 import { BaseAction, Schema } from '../BaseAction'
 import { ActionName } from '../types'
 import { fetchFile, getMd5HexFromFile } from '../../../support/utils'
-import { TEMP_DIR } from '../../../support/globalVars'
+import { getTempDir } from '../../../support/globalVars'
 import { randomUUID } from 'node:crypto'
 import { Dict } from 'cosmokit'
 
@@ -31,7 +31,8 @@ export class DownloadFile extends BaseAction<Payload, FileResponse> {
   protected async _handle(payload: Payload): Promise<FileResponse> {
     const isRandomName = !payload.name
     const name = payload.name ? path.basename(payload.name) : randomUUID()
-    const filePath = path.join(TEMP_DIR, name)
+    const tempDir = getTempDir()
+    const filePath = path.join(tempDir, name)
 
     if (payload.base64) {
       await fsPromise.writeFile(filePath, payload.base64, 'base64')
@@ -46,7 +47,7 @@ export class DownloadFile extends BaseAction<Payload, FileResponse> {
       if (isRandomName) {
         // 没给文件名时用 md5 命名
         const md5 = await getMd5HexFromFile(filePath)
-        const newPath = path.join(TEMP_DIR, md5)
+        const newPath = path.join(tempDir, md5)
         await fsPromise.rename(filePath, newPath)
         return { file: newPath }
       }

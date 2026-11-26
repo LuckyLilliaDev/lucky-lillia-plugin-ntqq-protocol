@@ -1,4 +1,4 @@
-import { TEMP_DIR } from '../support/globalVars'
+import { getTempDir } from '../support/globalVars'
 import { randomUUID } from 'node:crypto'
 import { existsSync, mkdirSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
@@ -339,9 +339,9 @@ export abstract class QQProtocolBase extends Service {
 
       if (data.pngBase64QrcodeData) {
         const base64Data = data.pngBase64QrcodeData.replace(/^data:image\/png;base64,/, '')
-        const qrFilePath = path.join(TEMP_DIR, 'login-qrcode.png')
-        if (!existsSync(TEMP_DIR)) {
-          mkdirSync(TEMP_DIR, { recursive: true })
+        const qrFilePath = path.join(getTempDir(), 'login-qrcode.png')
+        if (!existsSync(getTempDir())) {
+          mkdirSync(getTempDir(), { recursive: true })
         }
         await writeFile(qrFilePath, Buffer.from(base64Data, 'base64'))
         this.logger.info(`二维码文件已保存: ${qrFilePath}`)

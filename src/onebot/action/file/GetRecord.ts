@@ -3,7 +3,7 @@ import { ActionName } from '../types'
 import { decodeSilk } from '../../../support/utils/audio'
 import { BaseAction, Schema } from '../BaseAction'
 import { stat, unlink, writeFile } from 'node:fs/promises'
-import { TEMP_DIR } from '../../../support/globalVars'
+import { getTempDir } from '../../../support/globalVars'
 import { randomUUID } from 'node:crypto'
 import { ChatType } from '../../../ntqqapi/types'
 import { isSilk, isWav } from '../../../support/utils/audioFormat'
@@ -44,7 +44,7 @@ export default class GetRecord extends BaseAction<Payload, Response> {
       throw new Error(`下载语音失败: ${resp.status}`)
     }
     const audioBytes = Buffer.from(await resp.arrayBuffer())
-    const tmpBase = path.join(TEMP_DIR, randomUUID())
+    const tmpBase = path.join(getTempDir(), randomUUID())
     const outPath = `${tmpBase}.${payload.out_format}`
 
     if (isSilk(audioBytes)) {

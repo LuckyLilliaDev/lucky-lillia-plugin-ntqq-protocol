@@ -1,8 +1,8 @@
-import { readdirSync, readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs'
-import { join } from 'node:path'
+import { readdirSync, readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from 'node:fs'
+import { join, dirname } from 'node:path'
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
 import { execSync } from 'node:child_process'
-import { DATA_DIR } from '../../support/globalVars'
+import { getHostDataDir } from '../../support/globalVars'
 import { isDockerEnvironment, getSpecifiedUin, getProtocol, type ProtocolId } from '../../support/utils/environment'
 import { loadMachineGuidSync } from './machineGuid'
 import type { SessionInfo } from './client'
@@ -79,7 +79,7 @@ function decryptSensitive(b64: string): SensitiveFields {
 /** 凭证不跨协议通用, 所以按协议分文件; linux 不带后缀是为了兼容老文件 */
 export function getSessionFilePathForUin(uin: string, protocol: ProtocolId = getProtocol()): string {
   const suffix = protocol === 'linux' ? '' : `-${protocol}`
-  return join(DATA_DIR, `qq-session-${uin}${suffix}.json`)
+  return join(getHostDataDir(), `qq-session-${uin}${suffix}.json`)
 }
 
 /** uin / uid / guid / nick 保持明文, 快速登录列表要展示 */
@@ -106,6 +106,7 @@ export function saveSession(
     enc: encryptSensitive(sensitive),
   }
   const path = getSessionFilePathForUin(session.uin)
+  mkdirSync(dirname(path), { recursive: true })
   writeFileSync(path, JSON.stringify(data, null, 2))
 }
 
@@ -139,9 +140,10 @@ export function loadSession(uinArg?: string): PersistedSession | null {
 
 /** 只列有 enc 的 session, 不试解密: 换了机器的也会列出来, 选了再失败退回扫码 */
 export function listAvailableSessions(): Array<{ uin: string; uid: string; nick: string; savedAt: number; protocol: ProtocolId }> {
+  const dir = getHostDataDir()
   let entries: string[]
   try {
-    entries = readdirSync(DATA_DIR)
+    entries = readdirSync(dir)
   } catch {
     return []
   }
@@ -155,7 +157,7 @@ export function listAvailableSessions(): Array<{ uin: string; uid: string; nick:
     const fileProtocol = (m[2] as ProtocolId) || 'linux'
     if (fileProtocol !== active) continue
     try {
-      const raw = readFileSync(join(DATA_DIR, name), 'utf-8')
+      const raw = readFileSync(join(dir, name), 'utf-8')
       const data = JSON.parse(raw) as PersistedSession
       if (!data.enc || !data.uin) continue
       out.push({

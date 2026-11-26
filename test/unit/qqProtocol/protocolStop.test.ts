@@ -10,7 +10,9 @@ import type { SelfInfo } from '../../../src/ntqqapi/types'
 // has to reuse the client native sign is bound to.
 
 vi.mock('../../../src/support/globalVars', () => ({
-  TEMP_DIR: '/tmp/test-data/temp',
+  getHostDataDir: () => '/tmp/test-data',
+  getDbDir: () => '/tmp/test-data/database',
+  getTempDir: () => '/tmp/test-data/temp',
 }))
 
 // The protocol's record of the account as a test starts: logged in

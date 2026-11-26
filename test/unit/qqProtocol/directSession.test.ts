@@ -23,7 +23,9 @@ import { requestSign, setupSign, updateAuthToken } from '../../../src/qqProtocol
 import { teaEncrypt } from '../../../src/qqProtocol/direct-lib/tea'
 
 vi.mock('../../../src/support/globalVars', () => ({
-  TEMP_DIR: '/tmp/test-data/temp',
+  getHostDataDir: () => '/tmp/test-data',
+  getDbDir: () => '/tmp/test-data/database',
+  getTempDir: () => '/tmp/test-data/temp',
 }))
 
 vi.mock('../../../src/support/authToken', () => ({

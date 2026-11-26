@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { Context } from 'cordis'
 import Database from '@cordisjs/plugin-database'
 import SQLiteDriver from '@cordisjs/plugin-database-sqlite'
-import { dbDir, ensureRuntimeDirectories } from './support/globalVars'
+import { getDbDir, initPluginStorage } from './support/globalVars'
 import { ProtocolSelection, resolveProtocolSelection, setProtocolSelection } from './support/utils/environment'
 import { currentInstance } from './support/instance'
 import { configPaths } from './support/configPaths'
@@ -47,14 +47,14 @@ const selectionOf = (config: NTProtocolConfig): ProtocolSelection => resolveProt
  * the same login lifecycle, exposing the account to commands, chat plugins and Satori through ctx.bots.
  * Satori stays available for the other registered bots.
  */
-export function apply(ctx: Context, config: NTProtocolConfig) {
-  ensureRuntimeDirectories()
+export async function apply(ctx: Context, config: NTProtocolConfig) {
   bindLoggerFactory(name => ctx.logger(name))
+  const logger = ctx.logger('nt-protocol')
+  await initPluginStorage(ctx, logger)
   setConfigLogLevel(ctx.config.get().logLevel)
   ctx.on('llob/config-updated', settings => setConfigLogLevel(settings.logLevel))
   installFFmpegBridge(ctx)
   ctx.plugin(LoginInfoRoutes)
-  const logger = ctx.logger('nt-protocol')
   let selection = selectionOf(config)
   setProtocolSelection(selection)
   // Only another mode, or another QQ for the bridge, remounts the protocol (logging the account out). The pure protocol
@@ -82,7 +82,7 @@ export function apply(ctx: Context, config: NTProtocolConfig) {
       const own = ctx.isolate('database').isolate('model')
       own.plugin(Database)
       own.plugin(SQLiteDriver, {
-        path: pathToFileURL(path.join(dbDir, `${identity.uin}.v3.db`)).href,
+        path: pathToFileURL(path.join(getDbDir(), `${identity.uin}.v3.db`)).href,
       })
       // Their caches belong to this identity too. Login/System stay available before login.
       own.plugin(NTFriendApi)

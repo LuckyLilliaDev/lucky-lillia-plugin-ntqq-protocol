@@ -1,7 +1,7 @@
 import { getFFmpegAddon } from './ffmpeg'
 import { Context } from 'cordis'
 import path from 'node:path'
-import { TEMP_DIR } from '../globalVars'
+import { getTempDir } from '../globalVars'
 import { writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 
@@ -40,7 +40,7 @@ export async function createThumb(
     clearTimeout(timeout)
   }
   if (!thumbnail) ctx.logger.info('获取视频封面失败，使用默认封面')
-  const thumbPath = path.join(TEMP_DIR, randomUUID() + (thumbnail ? '.png' : '.jpg'))
+  const thumbPath = path.join(getTempDir(), randomUUID() + (thumbnail ? '.png' : '.jpg'))
   // The native job only returns bytes; a late completion cannot overwrite the fallback.
   await writeFile(thumbPath, thumbnail ?? defaultVideoThumb)
   return thumbPath

@@ -23,7 +23,7 @@ import { createThumb, getVideoInfo } from '../support/utils/video'
 import { encodeSilk } from '../support/utils/audio'
 import { Context } from 'cordis'
 import { isNullable, noop } from 'cosmokit'
-import { TEMP_DIR } from '../support/globalVars'
+import { getTempDir } from '../support/globalVars'
 
 export namespace SendElement {
   export function text(content: string): SendTextElement {
@@ -111,7 +111,7 @@ export namespace SendElement {
       ctx.logger.info('获取视频信息失败', e)
     }
     const md5 = await getMd5HexFromFile(filePath)
-    const thumbDir = TEMP_DIR
+    const thumbDir = getTempDir()
     const thumbFilePath = pathLib.join(thumbDir, `${md5}_0.png`)
     await mkdir(thumbDir, { recursive: true })
     if (diyThumbPath) {

@@ -1,17 +1,18 @@
-// data/machine_guid.bin: wtlogin / SSO 和 sign 都从这里读 guid, 对外才是同一台设备
+// machine_guid.bin (under ctx.storage.dir('host')): wtlogin / SSO 和 sign 都从这里读 guid, 对外才是同一台设备
 
 import { randomBytes } from 'node:crypto'
 import { promises as fs, readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, unlinkSync } from 'node:fs'
 import * as path from 'node:path'
+import { getHostDataDir } from '../../support/globalVars'
 import { getLogger } from '../../support/logger'
 
 const logger = getLogger('machine-guid')
 
-const DEFAULT_FILE = path.resolve('data/machine_guid.bin')
+const defaultFile = () => path.join(getHostDataDir(), 'machine_guid.bin')
 
 const cache = new Map<string, Buffer>()
 
-export async function loadMachineGuid(filePath: string = DEFAULT_FILE): Promise<Buffer> {
+export async function loadMachineGuid(filePath: string = defaultFile()): Promise<Buffer> {
   const resolved = path.resolve(filePath)
   const cached = cache.get(resolved)
   if (cached) return cached
@@ -37,7 +38,7 @@ export async function loadMachineGuid(filePath: string = DEFAULT_FILE): Promise<
   return guid
 }
 
-export function loadMachineGuidSync(filePath: string = DEFAULT_FILE): Buffer {
+export function loadMachineGuidSync(filePath: string = defaultFile()): Buffer {
   const resolved = path.resolve(filePath)
   const cached = cache.get(resolved)
   if (cached) return cached
@@ -60,7 +61,7 @@ export function loadMachineGuidSync(filePath: string = DEFAULT_FILE): Buffer {
 }
 
 /** session 恢复时同步 persisted.guid */
-export function overwriteMachineGuid(guid: Buffer, filePath: string = DEFAULT_FILE): void {
+export function overwriteMachineGuid(guid: Buffer, filePath: string = defaultFile()): void {
   if (guid.length !== 16) throw new Error(`overwriteMachineGuid expected 16B, got ${guid.length}`)
   const resolved = path.resolve(filePath)
   try { mkdirSync(path.dirname(resolved), { recursive: true }) } catch {}
@@ -69,7 +70,7 @@ export function overwriteMachineGuid(guid: Buffer, filePath: string = DEFAULT_FI
 }
 
 /** 等于换一台设备。目前没有调用方: 异地顶号只删 session, 设备指纹不变 */
-export function deleteMachineGuid(filePath: string = DEFAULT_FILE): void {
+export function deleteMachineGuid(filePath: string = defaultFile()): void {
   const resolved = path.resolve(filePath)
   try { unlinkSync(resolved) } catch {}
   cache.delete(resolved)
