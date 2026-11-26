@@ -7,6 +7,8 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
   mode: Schema.union([
     Schema.const('direct').description('纯协议'),
     Schema.const('native').description('官方 QQ 客户端桥接'),
+    // Anything else is the pure protocol: a mistyped --ntqq-mode, or nativeqq saved before the bridge was renamed
+    Schema.transform(Schema.any(), () => 'direct' as const),
   ]).default('native').description('登录方式'),
   protocol: Schema.union([
     Schema.const('linux').description('Linux'),
