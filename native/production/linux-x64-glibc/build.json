@@ -6,7 +6,7 @@
   },
   "variant": "production",
   "target": "x86_64-unknown-linux-gnu",
-  "buildId": "1343857c-3f4f-4cb5-8176-b2c559e1bd67",
+  "buildId": "80ee2a3c-68d9-4627-b425-9d84e5203aed",
   "profile": "release",
   "protection": {
     "kind": "vmprotect",
@@ -52,7 +52,7 @@
     },
     "exportsPreserved": true,
     "sdkImportsRemoved": true,
-    "sourceSha256": "806a90e65c0544e2fa057bcf5b044a6be555a0a412d40e47ae6e23e89a38852c",
+    "sourceSha256": "07f4273621424770876656190d6d893de5ec9ead6c071d7b94618f09680c9c5b",
     "profileSha256": "2f65aabc78c54974b88c4abf826a41b1430dd1e1a5480c8a26e9678110910218",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "x86_64-unknown-linux-gnu",
@@ -80,7 +80,7 @@
     },
     "exportsPreserved": true,
     "sdkImportsRemoved": true,
-    "sourceSha256": "fde8f8495d81036433d56c04dfe285c9b1fda3dff175ed8b6482c4dae3c7fcc1",
+    "sourceSha256": "9e0a4299f26ef5f16f030fd99741517ec4ca85c4f60ad83c36cf4f1eacecc991",
     "profileSha256": "cc1861ac4424b63e2dd23ab6bac9c77bbc5a6e08aae32932422bc8961ac4ed3c",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "x86_64-unknown-linux-gnu",
@@ -97,7 +97,7 @@
     ]
   },
   "files": {
-    "LuckyLillia.NTQQ.node": "c462c50dec554699e3f62375b162a67a167b6952daa58946f9147ca88d3fe929",
-    "libpmhq.so": "4138a5d47529f4b3075e86a89a5d8f89a6332225162d090f63fbe9a57f082ab4"
+    "LuckyLillia.NTQQ.node": "f9bda039a27537d8925033ed5efd1a7a3a03eb0712393bb44ed152ecced5b75f",
+    "libpmhq.so": "dbfe5646a57f59ee6dbf09648b425edb2ada16a33a1dee5f47bbfc9929bc39ca"
   }
 }

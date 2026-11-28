@@ -6,7 +6,7 @@
   },
   "variant": "production",
   "target": "aarch64-unknown-linux-gnu",
-  "buildId": "38e41c6e-dcd1-4664-ba77-4449ad9008f2",
+  "buildId": "67bf3272-2a2b-4784-9d53-671309548841",
   "profile": "release",
   "protection": {
     "kind": "vmprotect",
@@ -58,11 +58,11 @@
         "abi": 1,
         "rustVersion": "rustc 1.98.1 (48a229cea 2026-09-01)",
         "targetSpecSha256": "7b25a528839cb3a3f0705030c3b228ee5166ffa7dcdee680d3903f86562d7402",
-        "functionPrefixes": 5586,
-        "narrowedTables": 1729
+        "functionPrefixes": 5879,
+        "narrowedTables": 1843
       }
     },
-    "sourceSha256": "4fff39208ea35cbfb3cdd603ed3c4e0476057efc5c46229632f56763a4a2dd61",
+    "sourceSha256": "bf92abcb72c99d7c9932db734b17156ee7e08a48390f12cf08da21c5ac8b103f",
     "profileSha256": "2f65aabc78c54974b88c4abf826a41b1430dd1e1a5480c8a26e9678110910218",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "aarch64-unknown-linux-gnu",
@@ -100,7 +100,7 @@
         "narrowedTables": 135
       }
     },
-    "sourceSha256": "520b16dcfa1a23af6e2ea7c5f8503fc22a4d24a1f8afce2275d88fd31e0f9b7e",
+    "sourceSha256": "be28beffdcd9adfd3b377e3b71f4e8b95988880c82dc8db3b53d5db555139e80",
     "profileSha256": "cc1861ac4424b63e2dd23ab6bac9c77bbc5a6e08aae32932422bc8961ac4ed3c",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "aarch64-unknown-linux-gnu",
@@ -117,7 +117,7 @@
     ]
   },
   "files": {
-    "LuckyLillia.NTQQ.node": "d78e22f1740a6dca660aac3e7f9e0e8a6e7dd21433f64d56097ada0c6d767d16",
-    "libpmhq.so": "09f15b9ffcefdc1acaf9fef061a45f076faf35e71555ab9f0b265ba935beab87"
+    "LuckyLillia.NTQQ.node": "dec02f211c93eaf055af8d2825aba9874af356409ef3c28d379ccd63e1e6bd16",
+    "libpmhq.so": "018bee785fb564847f720d048272103195d297c235d3d2c90b1e73ffefac8dbf"
   }
 }

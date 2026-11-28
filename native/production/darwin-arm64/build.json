@@ -6,12 +6,13 @@
   },
   "variant": "production",
   "target": "aarch64-apple-darwin",
-  "buildId": "ba4c0622-b9a9-43e0-a1ef-8a87f3b582b2",
+  "buildId": "5a96545c-8b55-45ee-8e11-20ff87e34bc1",
   "profile": "release",
+  "protection": null,
   "addon": "LuckyLillia.NTQQ.node",
   "sidecar": "libpmhq.dylib",
   "files": {
-    "LuckyLillia.NTQQ.node": "601e5d4e36b12984acb23754f4807dc4d39655e98854f6ccbd0c5775c8c6040e",
-    "libpmhq.dylib": "98778f8ae86bac12cb2ca71e4f69ea8f00199f0928158183b6fabb1d317d9b2b"
+    "LuckyLillia.NTQQ.node": "2c6fac3f89b3384adecdf3b82320eebd511681171097ec26316dba844fa92e8d",
+    "libpmhq.dylib": "d6034377025c953ad672ad37defbc82d02a7fbd5f868d16f3c176ef5f274d273"
   }
 }

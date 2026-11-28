@@ -6,7 +6,7 @@
   },
   "variant": "production",
   "target": "aarch64-unknown-linux-musl",
-  "buildId": "5392303c-4cc6-435b-ae3e-346b9d089648",
+  "buildId": "cc10255b-c82f-4f60-adc9-7f63c6b27144",
   "profile": "release",
   "protection": {
     "kind": "vmprotect",
@@ -58,19 +58,19 @@
         "abi": 1,
         "rustVersion": "rustc 1.98.1 (48a229cea 2026-09-01)",
         "targetSpecSha256": "78c1b4742d650eba2d1b19661ea6b64443b1df718b32f70858878c270fa35ec4",
-        "functionPrefixes": 5579,
-        "narrowedTables": 1726
+        "functionPrefixes": 5872,
+        "narrowedTables": 1841
       },
       "musl": {
         "kind": "bss-loader",
         "abi": 1,
-        "file": "liblucky_vmp_daa1167e442a4fad92852b7aed3a1144.so",
-        "sha256": "04f7298cd81fe650139facbbed2c86cbb838162426cc636ad83e87b068bd6eb4",
+        "file": "liblucky_vmp_6077282a332442538154b5765e54fec2.so",
+        "sha256": "3a0f547027a7356b5eb6f3c66bf277b8e69a3daa5707b98fd871320e1094db84",
         "sourceSha256": "cdf24cb30ac539807e5d2395467f949af57efc027e5dc04832eb88f4cc0185c3",
         "legacyInitFini": true
       }
     },
-    "sourceSha256": "62cc6b44aaa6fcda45921c4bc73388b3d49ebafb74fb1b44cb433c6167f70f50",
+    "sourceSha256": "e4f036acfc12b09f2b88dc2f41888ab665fd237c3483f3b463f88615c21f1a4d",
     "profileSha256": "2f65aabc78c54974b88c4abf826a41b1430dd1e1a5480c8a26e9678110910218",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "aarch64-unknown-linux-musl",
@@ -81,7 +81,7 @@
   },
   "addon": "LuckyLillia.NTQQ.node",
   "sidecar": "libpmhq.so",
-  "runtime": "liblucky_vmp_daa1167e442a4fad92852b7aed3a1144.so",
+  "runtime": "liblucky_vmp_6077282a332442538154b5765e54fec2.so",
   "sidecarProtection": {
     "kind": "vmprotect",
     "component": "sidecar",
@@ -111,13 +111,13 @@
       "musl": {
         "kind": "bss-loader",
         "abi": 1,
-        "file": "liblucky_vmp_792e6acaf641433c8f0b4a9157258b47.so",
-        "sha256": "c261104a5e6a519f3fa846322203d99abdc181e01bf8fd93ea114420eb391a9d",
+        "file": "liblucky_vmp_3aceeaa0eb9b4a34a8a0e9f116277e91.so",
+        "sha256": "2783b411cb186b313c1cb284a3459298e6d18c9f1850c5e6de9027204332d588",
         "sourceSha256": "cdf24cb30ac539807e5d2395467f949af57efc027e5dc04832eb88f4cc0185c3",
         "legacyInitFini": true
       }
     },
-    "sourceSha256": "b22a6cd7d4c4d547f4149a3bf39568ba983980c00e6fe29157071f308957f52b",
+    "sourceSha256": "f65056e72dd65b5d560dc835135fd33e0898eb3538f5124e0ccf3d3210009302",
     "profileSha256": "cc1861ac4424b63e2dd23ab6bac9c77bbc5a6e08aae32932422bc8961ac4ed3c",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "aarch64-unknown-linux-musl",
@@ -133,11 +133,11 @@
       "invalid proof rejected"
     ]
   },
-  "sidecarRuntime": "liblucky_vmp_792e6acaf641433c8f0b4a9157258b47.so",
+  "sidecarRuntime": "liblucky_vmp_3aceeaa0eb9b4a34a8a0e9f116277e91.so",
   "files": {
-    "LuckyLillia.NTQQ.node": "2f1e2b5f2839b8e31fbed9846142cd3d9237506945e68f1416683919ad067d69",
-    "libpmhq.so": "8431b3238f01a4ce03604044a94cdddd6e4c7148ab09d9d7838ff88d3ce5b845",
-    "liblucky_vmp_daa1167e442a4fad92852b7aed3a1144.so": "04f7298cd81fe650139facbbed2c86cbb838162426cc636ad83e87b068bd6eb4",
-    "liblucky_vmp_792e6acaf641433c8f0b4a9157258b47.so": "c261104a5e6a519f3fa846322203d99abdc181e01bf8fd93ea114420eb391a9d"
+    "LuckyLillia.NTQQ.node": "0f47f992127a7d2440590ebb187493143eefe076307023d3c5dad81236892b30",
+    "libpmhq.so": "e4ecdfe598c069ec30e5900e4bc164ffb03307a7b10f931417684199439195f8",
+    "liblucky_vmp_6077282a332442538154b5765e54fec2.so": "3a0f547027a7356b5eb6f3c66bf277b8e69a3daa5707b98fd871320e1094db84",
+    "liblucky_vmp_3aceeaa0eb9b4a34a8a0e9f116277e91.so": "2783b411cb186b313c1cb284a3459298e6d18c9f1850c5e6de9027204332d588"
   }
 }

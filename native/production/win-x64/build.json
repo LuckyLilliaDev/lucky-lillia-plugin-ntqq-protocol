@@ -6,7 +6,7 @@
   },
   "variant": "production",
   "target": "x86_64-pc-windows-msvc",
-  "buildId": "896feea1-178f-4e90-802a-c0482c2d54c7",
+  "buildId": "29247326-0c9d-40ae-930a-90e676b379f9",
   "profile": "release",
   "protection": {
     "kind": "vmprotect",
@@ -52,7 +52,7 @@
     },
     "exportsPreserved": true,
     "sdkImportsRemoved": true,
-    "sourceSha256": "d7a60299bf01d5fef51578607b5b9e1c5df8035ccc63de633822cdf5f16a044b",
+    "sourceSha256": "611f526c9c17e6e6d83d47298ec4ce789cf70441cd8e490a9689233e9a19c164",
     "profileSha256": "2f65aabc78c54974b88c4abf826a41b1430dd1e1a5480c8a26e9678110910218",
     "toolVersion": "VMProtect Ultimate v 3.10.3 (build 2535) Copyright 2003-2025 VMProtect Software",
     "target": "x86_64-pc-windows-msvc",
@@ -64,6 +64,6 @@
   "addon": "LuckyLillia.NTQQ.node",
   "sidecar": null,
   "files": {
-    "LuckyLillia.NTQQ.node": "66a33422b5c1522e73367b5699d7d526f4f4b3d4bbae891c8a5ca16de46b6072"
+    "LuckyLillia.NTQQ.node": "df9629628978f1772c19dce2ff69a851f96a8b45a6e52654314a927ac619542e"
   }
 }

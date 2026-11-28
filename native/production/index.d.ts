@@ -66,12 +66,24 @@ export interface AcquireSignTokenResult {
 /** **组 macOS device_pb**, 返 hex。喂给 getMacosEskToken / getMacosSa2Token 的 devicePbHex。 */
 export declare function buildMacosDevicePb(args: MacosDevicePbArgs): string
 
+/** Build an iOS or HarmonyOS `device_pb` protobuf inside native Rust and return `{ devicePbHex, qimei36 }`. */
+export declare function buildMobileDevicePb(args: MobileDevicePbArgs): MobileDevicePbResult
+
 /**
  * 取 Linux SsoReport 的 xwid body (常量: `f1=report_id, f2{QUA,"0.0.20","xwid","0","0"}`)。
  * Bot 侧 sendXwidBurst 用它做连号突发 —— body 恒定, 每帧只 sign(ts 各异) 不同。
  * report_id 缺省用跨装机常量 REPORT_ID (`0df00071646`)。napi 名: buildXwidBody
  */
 export declare function buildXwidBody(qua: string, reportId?: string | undefined | null): Buffer
+
+/** Clear the cached mobile O3 channel (called when the TCP connection closes). */
+export declare function clearMobileO3Channel(): void
+
+/**
+ * Register a real HarmonyOS QIMEI36 online via `/ola/v2` through the user's own egress IP.
+ * Cached per `(seedHex, isPhone)` for the process lifetime; callers can hydrate with `setHarmonyQimei`.
+ */
+export declare function getHarmonyQimei(args: HarmonyQimeiArgs): Promise<HarmonyQimeiResult>
 
 /**
  * **Linux ESK -> SA** (`SsoEstablishShareKey` 然后 `SsoSecureAccess`), 一个函数跑完整条 o3
@@ -104,6 +116,44 @@ export declare function getMacosQimei(args: MacosQimeiArgs): Promise<MacosQimeiR
 
 /** **登录后 O3GetTail** (A2Establish 通道, sub-cmd O3GetTail)。拿 sign tail field0 (0 = 退回 "Hero")。 */
 export declare function getMacosTail(args: MacosEstablishArgs): Promise<number>
+
+/**
+ * Pre-login mobile ESK (`SsoEstablishShareKey`): establishes the O3 channel, keeps channel keys
+ * inside native Rust, and returns `{ token, ttlSecs }`.
+ */
+export declare function getMobileEskToken(args: MobileEstablishArgs): Promise<MobileTokenResult>
+
+/**
+ * Post-login / renewal mobile O3 token (`SsoSecureA2Establish` -> `SsoSecureA2Access`).
+ * Reuses or upgrades the cached native O3 channel and keeps all keys inside Rust.
+ */
+export declare function getMobileLoginToken(args: MobileLoginTokenArgs): Promise<MobileTokenResult>
+
+/** Build and decrypt Windows ESK locally, relaying only the QQ packet through the bot. */
+export declare function getWindowsEskToken(args: WindowsEskTokenArgs): Promise<WindowsTokenResult>
+
+/** Register the Windows device locally. The caller persists the returned QIMEI with its GUID. */
+export declare function getWindowsQimei(args: WindowsQimeiArgs): Promise<string>
+
+export interface HarmonyQimeiArgs {
+  /** 32-hex device GUID seed (deterministic uuid/odid/aaid/oaid/fit -> stable qimei36). */
+  seedHex: string
+  /** true for phone (`harmony`), false for tablet (`harmonypad`). */
+  isPhone: boolean
+  /** QUA (e.g. `V1_HAR_SQ_9.2.71_3494_APP_D`), drives reported app_version. */
+  qua: string
+  /** Optional hardware market name / model. */
+  model?: string
+  /** Optional HarmonyOS version string (e.g. `5.0.0`). */
+  osVer?: string
+  /** Optional app_key override; defaults to `qimei::harmony::APP_KEY_DEFAULT`. */
+  appKey?: string
+}
+
+export interface HarmonyQimeiResult {
+  qimei36: string
+  qimei16: string
+}
 
 /**
  * 初始化 native Client + 注册 send_packet / logger 回调.
@@ -224,6 +274,63 @@ export interface MacosTokenResult {
   ttlSecs: number
 }
 
+export interface MobileDevicePbArgs {
+  /** `"ios"` or `"harmony"`. */
+  platform: string
+  /** true for phone (`iphone` / `harmony`), false for tablet (`ipad` / `harmonypad`). */
+  isPhone: boolean
+  /** 32-hex device GUID seed. */
+  seedHex: string
+  qua: string
+  packageName: string
+  ptVersion: string
+  buildVer: string
+  deviceName: string
+  model: string
+  osVer: string
+  /**
+   * Optional QIMEI36. For `"ios"`, empty/omitted synthesizes deterministic qimei36 from seed.
+   * For `"harmony"`, empty/omitted omits k=31 (never uses an unregistered synthetic QIMEI).
+   */
+  q36?: string
+  /** Optional XWID (k=25); omitted on Harmony when empty. */
+  xwid?: string
+  /** Optional vendor name (Harmony k=15/16, defaults to `"HUAWEI"`). */
+  vendorName?: string
+  /** Optional screen metrics `[width, height, dpi]`. */
+  screenMetrics?: Array<string>
+}
+
+export interface MobileDevicePbResult {
+  /** Serialized `device_pb` hex (opaque to JS, passed into `getMobileEskToken`/`getMobileLoginToken`). */
+  devicePbHex: string
+  /** Effective `qimei36` (synthesized for iOS when input was empty; echoed for Harmony). */
+  qimei36: string
+}
+
+export interface MobileEstablishArgs {
+  /** Serialized `device_pb` hex (from `buildMobileDevicePb`). */
+  devicePbHex: string
+  /** Optional epoch ms timestamp; defaults to current time. */
+  tsMs?: number
+}
+
+export interface MobileLoginTokenArgs {
+  /** Serialized `device_pb` hex (from `buildMobileDevicePb`). */
+  devicePbHex: string
+  /** Optional active 12B token (e.g. `session.signToken12B` during renewal); falls back to cached ESK token1. */
+  currentToken?: string
+  /** Optional epoch ms timestamp; defaults to current time. */
+  tsMs?: number
+}
+
+export interface MobileTokenResult {
+  /** Decrypted 12B ASCII token (empty string if unavailable). */
+  token: string
+  /** Proactive renewal interval in seconds (computed from server expiry metadata). */
+  ttlSecs: number
+}
+
 /** Configuration fields inside config use the existing pmhq_config.json snake_case names. */
 export interface NativeQQOptions {
   /** Absolute directory containing the native addon and its injection sidecar. */
@@ -278,6 +385,16 @@ export interface RelayPacket {
  * 这一步是把服务端绑定状态对齐, 不是新建一个 ownership).
  */
 export declare function setAuthToken(authToken: string): Promise<void>
+
+/** Hydrate the process-level HarmonyOS QIMEI cache from disk persistence so `/ola/v2` is not re-hit. */
+export declare function setHarmonyQimei(args: SetHarmonyQimeiArgs): void
+
+export interface SetHarmonyQimeiArgs {
+  seedHex: string
+  isPhone: boolean
+  qimei36: string
+  qimei16?: string
+}
 
 /**
  * **回填 macOS qimei**。Bot 把持久化在账号 session 的 qimei 写进进程级缓存;
@@ -397,6 +514,22 @@ export interface ValidateAuthTokenArgs {
    * 所以校验和签名永远指向同一个 manager (dev build 下 cdn 被忽略, base_url 编译期锁 localhost)。
    */
   cdn?: string
+}
+
+export interface WindowsEskTokenArgs {
+  guidHex: string
+  qimei36: string
+  qua: string
+  uin: number
+}
+
+export interface WindowsQimeiArgs {
+  guidHex: string
+}
+
+export interface WindowsTokenResult {
+  token: string
+  ttlSecs: number
 }
 
 /** Absolute directory containing the matched addon and NativeQQ sidecar. */
