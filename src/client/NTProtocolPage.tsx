@@ -8,7 +8,7 @@ import LaunchQQ from './LaunchQQ'
 import ProtocolSettings from './ProtocolSettings'
 import LoginMethod from './LoginMethod'
 import QQLogin from './QQLogin'
-import { LOGIN_MODES, type BridgeStatus, type LoginMode, type ProtocolId } from './loginOptions'
+import { LOGIN_MODES, protocolLabel, type BridgeStatus, type InteractiveLoginMethod, type LoginMode, type ProtocolId } from './loginOptions'
 
 interface LoginInfo {
   online: boolean
@@ -17,7 +17,9 @@ interface LoginInfo {
   mode: LoginMode
   /** The protocol service is up, and with it the login routes. */
   ntProtocol: boolean
-  lockedProtocol?: ProtocolId
+  protocol?: ProtocolId
+  loginMethod?: InteractiveLoginMethod
+  loginMethods?: InteractiveLoginMethod[]
   /** Only for the bridge */
   nativeQQ?: { qqPath: string; connected: boolean; status?: BridgeStatus }
 }
@@ -45,7 +47,7 @@ const NTProtocolPage: React.FC = () => {
   const [confirmLogout, setConfirmLogout] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
   // Picked in the login method editor, not saved yet: the login below belongs to the method that runs
-  const [draftMode, setDraftMode] = useState<LoginMode | null>(null)
+  const [draftSelection, setDraftSelection] = useState<{ mode: LoginMode; protocol: ProtocolId } | null>(null)
   // Polls right away, e.g. once a quick login went through
   const pollNow = useRef<() => void>(() => {})
 
@@ -85,8 +87,9 @@ const NTProtocolPage: React.FC = () => {
         }
       }
       running = false
-      const comingUp = bridge && (bridge.session === 'starting' || (bridge.session === 'running' &&
-        (!bridge.qqRunning || (login.status === 'fulfilled' && !login.value.online))))
+      const protocolStarting = login.status !== 'fulfilled' || !login.value.ntProtocol
+      const comingUp = protocolStarting || (bridge && (bridge.session === 'starting' || (bridge.session === 'running' &&
+        (!bridge.qqRunning || (login.status === 'fulfilled' && !login.value.online)))))
       timer = setTimeout(poll, comingUp ? QUICK_POLL_INTERVAL : POLL_INTERVAL)
     }
     pollNow.current = () => void poll()
@@ -140,6 +143,8 @@ const NTProtocolPage: React.FC = () => {
   const bridge = info?.mode === 'native' ? info.nativeQQ?.status : undefined
   // Without a session nothing reconnects the bridge's account: the page offers to start QQ instead of its card
   const bridgeDown = info?.mode === 'native' && (bridge ? bridge.session !== 'running' : !info.nativeQQ?.connected)
+  const draftModeChanged = !!draftSelection && draftSelection.mode !== info?.mode
+  const draftProtocolChanged = !!draftSelection && !draftModeChanged && draftSelection.mode === 'direct' && draftSelection.protocol !== info?.protocol
   let body: React.ReactNode
   // The login waits on the token: the form takes the whole page then
   let tokenFormShown = false
@@ -151,10 +156,12 @@ const NTProtocolPage: React.FC = () => {
     body = entry?.state === 'failed'
       ? <p className="text-sm text-theme-secondary">NTQQ 协议没能启动，原因见上方提示</p>
       : waiting('NTQQ 协议正在启动...')
-  } else if (draftMode && draftMode !== info.mode) {
+  } else if (draftModeChanged || draftProtocolChanged) {
     body = (
       <p className="py-10 text-center text-sm text-theme-secondary">
-        保存后改用{LOGIN_MODES.find(mode => mode.id === draftMode)?.label}登录
+        {draftModeChanged
+          ? `保存后改用${LOGIN_MODES.find(mode => mode.id === draftSelection!.mode)?.label}登录`
+          : `保存后改用 ${protocolLabel(draftSelection!.protocol)} 协议登录`}
       </p>
     )
   } else if (account && (info.online || (info.mode === 'direct' && !relogin))) {
@@ -263,7 +270,13 @@ const NTProtocolPage: React.FC = () => {
             {loginError}
           </div>
         )}
-        <QQLogin onLogin={() => pollNow.current()} />
+        <QQLogin
+          key={`${info.mode}:${info.protocol ?? ''}`}
+          protocol={info.protocol}
+          loginMethod={info.loginMethod}
+          loginMethods={info.mode === 'native' ? ['qr'] : info.loginMethods}
+          onLogin={() => pollNow.current()}
+        />
       </div>
     )
   }
@@ -283,14 +296,16 @@ const NTProtocolPage: React.FC = () => {
       {info && (
         <LoginMethod
           config={config}
-          lockedProtocol={info.lockedProtocol}
           online={info.online}
-          // The account goes with the old mode: show the new mode's login rather than its card offline
-          onSaved={(modeChanged) => {
-            if (modeChanged) setRelogin(true)
+          // The account goes with the old method: show the new method's login rather than its card offline
+          onSaved={(methodChanged) => {
+            if (methodChanged) {
+              setKnown(null)
+              setRelogin(true)
+            }
             pollNow.current()
           }}
-          onDraftMode={setDraftMode}
+          onDraftChange={setDraftSelection}
         />
       )}
       {/* The bridge needs a token too, read once its QQ is up */}

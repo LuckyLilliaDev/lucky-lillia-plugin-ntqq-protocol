@@ -3,7 +3,7 @@ import { Cpu, Loader2, MonitorSmartphone, Save } from 'lucide-react'
 import { PathInput, SelectInput, usePluginContext, type PluginConfigState } from '@luckylillia-dev/plugin-sdk/webui'
 import type { NTProtocolConfig } from '../support/types'
 import {
-  describeMethod, LOGIN_MODES, LoginMode, pendingProtocol, protocolLabel, PROTOCOLS, ProtocolId,
+  describeMethod, LOGIN_MODES, LoginMode, PROTOCOLS, ProtocolId,
 } from './loginOptions'
 
 const ICONS = { direct: Cpu, native: MonitorSmartphone }
@@ -62,44 +62,38 @@ const QQPathField: React.FC<{ value: string; onChange(qqPath: string): void }> =
 
 interface LoginMethodProps {
   config: PluginConfigState<NTProtocolConfig>
-  lockedProtocol?: ProtocolId
   /** Switching the mode logs this account out */
   online: boolean
-  onSaved: (modeChanged: boolean) => void
-  /** The mode picked in the open editor, null when it is closed */
-  onDraftMode?: (mode: LoginMode | null) => void
+  onSaved: (methodChanged: boolean) => void
+  /** The mode & protocol picked in the open editor, null when it is closed */
+  onDraftChange?: (draft: { mode: LoginMode; protocol: ProtocolId } | null) => void
 }
 
 /** The login method of builtin:nt-protocol: which one, and the form to change it. */
-const LoginMethod: React.FC<LoginMethodProps> = ({ config, lockedProtocol, online, onSaved, onDraftMode }) => {
+const LoginMethod: React.FC<LoginMethodProps> = ({ config, online, onSaved, onDraftChange }) => {
   const { value, save, saving, error } = config
   // The settings while editing
   const [draft, setDraft] = useState<NTProtocolConfig | null>(null)
   const draftMode = draft ? draft.mode : null
+  const draftProtocol = draft ? draft.protocol : null
   // A logged-in account keeps its login method: the editor goes once the account is online
   useEffect(() => {
     if (online) setDraft(null)
   }, [online])
   useEffect(() => {
-    onDraftMode?.(draftMode)
-  }, [draftMode, onDraftMode])
+    onDraftChange?.(draftMode && draftProtocol ? { mode: draftMode, protocol: draftProtocol } : null)
+  }, [draftMode, draftProtocol, onDraftChange])
 
   if (error) return <p className="mb-6 text-sm text-red-500">读取登录方式失败：{error}</p>
   if (!value) return null
   const current = value
 
   if (!draft) {
-    const pending = pendingProtocol(current, lockedProtocol)
-    // What runs now; a protocol saved since then gets the note below
-    const running = pending ? { ...current, protocol: lockedProtocol! } : current
     return (
       <div className="flex items-center gap-3 p-4 mb-6 bg-theme-item rounded-xl">
         <div className="flex-1 min-w-0">
           <div className="text-xs text-theme-muted">登录方式</div>
-          <div className="text-sm font-medium text-theme mt-0.5">{describeMethod(running)}</div>
-          {pending && (
-            <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">已改为 {protocolLabel(pending)}，重启 LLBot 后生效</div>
-          )}
+          <div className="text-sm font-medium text-theme mt-0.5">{describeMethod(current)}</div>
           {online && (
             <div className="text-xs text-theme-muted mt-1">
               {current.mode === 'native' ? '已登录：在 QQ 客户端里退出登录后才能更改' : '已登录：退出登录后才能更改'}
@@ -115,14 +109,13 @@ const LoginMethod: React.FC<LoginMethodProps> = ({ config, lockedProtocol, onlin
 
   const shown = draft
   const protocol = PROTOCOLS.find(item => item.id === shown.protocol)
-  const waits = pendingProtocol(shown, lockedProtocol)
   const change = (patch: Partial<NTProtocolConfig>) => setDraft({ ...draft, ...patch })
 
   const submit = async () => {
-    const modeChanged = shown.mode !== current.mode
+    const methodChanged = shown.mode !== current.mode || (shown.mode === 'direct' && shown.protocol !== current.protocol)
     if (await save(draft, { message: '登录方式已保存' })) {
       setDraft(null)
-      onSaved(modeChanged)
+      onSaved(methodChanged)
     }
   }
 
@@ -156,14 +149,14 @@ const LoginMethod: React.FC<LoginMethodProps> = ({ config, lockedProtocol, onlin
 
       {shown.mode === 'direct' ? (
         <div>
-          <label className="block text-sm font-medium text-theme-secondary mb-2">模拟的 QQ 客户端</label>
+          <label className="block text-sm font-medium text-theme-secondary mb-2">协议</label>
           <SelectInput
             value={shown.protocol}
             options={PROTOCOLS.map(item => ({ value: item.id, label: item.label }))}
             onChange={protocol => change({ protocol })}
           />
           <p className="text-xs text-theme-muted mt-1">
-            不同客户端的登录记录分开保存，换了以后要重新登录
+            不同协议的登录记录分开保存，换了以后要重新登录
           </p>
           {protocol?.hint && <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{protocol.hint}</p>}
         </div>
@@ -172,12 +165,6 @@ const LoginMethod: React.FC<LoginMethodProps> = ({ config, lockedProtocol, onlin
           value={shown.nativeQQ.qqPath}
           onChange={qqPath => change({ nativeQQ: { ...draft.nativeQQ, qqPath } })}
         />
-      )}
-
-      {waits && lockedProtocol && (
-        <p className="text-sm text-amber-600 dark:text-amber-400">
-          这次运行的纯协议已经在用 {protocolLabel(lockedProtocol)}，改成 {protocolLabel(waits)} 要重启 LLBot 后才生效
-        </p>
       )}
 
       <div className="flex justify-end gap-3">
