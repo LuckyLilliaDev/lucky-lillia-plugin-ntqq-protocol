@@ -49,6 +49,11 @@ export function createMockContext() {
       selfInfo: { uid: 'test-uid', uin: '123456', nick: 'TestBot', online: true },
       authTokenStatus: { hasToken: true, validation: 'valid', message: '', loginError: '' },
       checkAuthToken: vi.fn(),
+      getPasswordLoginState: vi.fn(() => ({ supported: false, phase: 'idle' })),
+      passwordLogin: vi.fn(),
+      submitLoginCaptcha: vi.fn(),
+      submitNewDeviceSig: vi.fn(),
+      cancelPasswordLogin: vi.fn(),
       getQQResourceUsage: vi.fn(() => Promise.resolve({
         memory: 500000000,
         totalMemory: 8000000000,

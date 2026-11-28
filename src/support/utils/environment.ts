@@ -9,7 +9,7 @@ export function isDockerEnvironment(): boolean {
 }
 
 export type ProtocolMode = 'direct' | 'native'
-export type ProtocolId = 'linux' | 'windows' | 'macos' | 'watch'
+export type ProtocolId = 'linux' | 'windows' | 'macos' | 'watch' | 'ipad' | 'iphone' | 'harmonypad' | 'harmony'
 export type Cdn = 'cf' | 'china'
 
 /**
@@ -25,24 +25,10 @@ export interface ProtocolSelection {
 }
 
 let selection: ProtocolSelection | undefined
-let locked: ProtocolId | undefined
 
 /** Set by the NT protocol plugin before it mounts the protocol, and again when its settings change. */
 export function setProtocolSelection(value: ProtocolSelection) {
     selection = value
-}
-
-/**
- * Called as the pure protocol's client is created: the client lives as long as the process (native sign binds
- * its relay to it), and so does the protocol it speaks.
- */
-export function lockProtocol() {
-    locked ??= getProtocol()
-}
-
-/** What the pure protocol is locked to until LLBot restarts; undefined while it has no client. */
-export function lockedProtocol(): ProtocolId | undefined {
-    return locked
 }
 
 export function isNativeQQMode(): boolean {
@@ -83,10 +69,10 @@ export function getAuthTokenPageUrl(cdn: Cdn = getCdn()): string {
 }
 
 /**
- * The profile the protocol layer runs with. The pure protocol: what it is locked to, else the settings' choice, else
- * linux (its default). NativeQQ runs with linux (highway appId, SsoInfoSync).
+ * The profile the protocol layer runs with. The pure protocol follows the settings' choice (default linux);
+ * NativeQQ runs with linux (highway appId, SsoInfoSync).
  */
 export function getProtocol(): ProtocolId {
     if (selection?.mode === 'native') return 'linux'
-    return locked ?? selection?.protocol ?? 'linux'
+    return selection?.protocol ?? 'linux'
 }

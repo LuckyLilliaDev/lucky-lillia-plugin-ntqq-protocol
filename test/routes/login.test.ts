@@ -3,7 +3,7 @@ import { createTestApp } from '../helpers/testApp'
 import { createMockContext } from '../helpers/mockContext'
 import { createLoginRoutes } from '../../src/loginRoutes'
 import { createLoginInfoRoutes } from '../../src/loginInfoRoutes'
-import { isNativeQQMode, lockedProtocol } from '../../src/support/utils/environment'
+import { isNativeQQMode } from '../../src/support/utils/environment'
 import { QuickLoginUnsupportedError } from '../../src/qqProtocol/base'
 
 describe('login routes', () => {
@@ -131,6 +131,61 @@ describe('login routes', () => {
     })
   })
 
+  describe('mobile password login routes', () => {
+    it('GET /login-state returns current password login state', async () => {
+      ctx.qqProtocol.getPasswordLoginState.mockReturnValue({ supported: true, phase: 'captcha', uin: '10001' })
+      const res = await createTestApp(createLoginRoutes(ctx)).request('/login-state')
+      expect(res.status).toBe(200)
+      expect(await res.json()).toEqual({ success: true, data: { supported: true, phase: 'captcha', uin: '10001' } })
+    })
+
+    it('POST /password-login validates inputs and forwards to qqProtocol', async () => {
+      const app = createTestApp(createLoginRoutes(ctx))
+      const bad = await app.request('/password-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uin: '10001' }),
+      })
+      expect(bad.status).toBe(400)
+
+      ctx.qqProtocol.passwordLogin.mockResolvedValue({ supported: true, phase: 'online', uin: '10001' })
+      const ok = await app.request('/password-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uin: '10001', password: 'secret' }),
+      })
+      expect(ok.status).toBe(200)
+      expect(ctx.qqProtocol.passwordLogin).toHaveBeenCalledWith('10001', 'secret')
+      expect(await ok.json()).toEqual({ success: true, data: { supported: true, phase: 'online', uin: '10001' } })
+    })
+
+    it('POST /login-captcha and /login-new-device and /login-cancel forward cleanly', async () => {
+      const app = createTestApp(createLoginRoutes(ctx))
+      ctx.qqProtocol.submitLoginCaptcha.mockResolvedValue({ supported: true, phase: 'new_device_qr', uin: '10001' })
+      ctx.qqProtocol.submitNewDeviceSig.mockResolvedValue({ supported: true, phase: 'online', uin: '10001' })
+
+      const cap = await app.request('/login-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: 'tk', randstr: '@ab', sid: '2000000038' }),
+      })
+      expect(cap.status).toBe(200)
+      expect(ctx.qqProtocol.submitLoginCaptcha).toHaveBeenCalledWith('tk', '@ab', '2000000038')
+
+      const nd = await app.request('/login-new-device', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sig: 'succ_tok' }),
+      })
+      expect(nd.status).toBe(200)
+      expect(ctx.qqProtocol.submitNewDeviceSig).toHaveBeenCalledWith('succ_tok')
+
+      const cancel = await app.request('/login-cancel', { method: 'POST' })
+      expect(cancel.status).toBe(200)
+      expect(ctx.qqProtocol.cancelPasswordLogin).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('GET /login-info', () => {
     it('returns selfInfo', async () => {
       const app = createTestApp(createLoginInfoRoutes(ctx))
@@ -149,12 +204,12 @@ describe('login routes', () => {
     })
 
     it('says how the account logs in', async () => {
-      vi.mocked(lockedProtocol).mockReturnValue('linux')
       const body = await (await createTestApp(createLoginInfoRoutes(ctx)).request('/login-info')).json()
       expect(body.data).toMatchObject({
         mode: 'direct',
         protocol: 'linux',
-        lockedProtocol: 'linux',
+        loginMethod: 'qr',
+        loginMethods: ['qr', 'password'],
       })
       expect(body.data.nativeQQ).toBeUndefined()
     })

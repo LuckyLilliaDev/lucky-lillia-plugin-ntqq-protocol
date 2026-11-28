@@ -19,6 +19,8 @@ vi.mock('../../../src/qqProtocol/direct-lib/sign', () => ({
   setSignMachineGuid: vi.fn(),
   acquireSignToken: vi.fn(),
   acquireMacosEskOnly: vi.fn(),
+  acquireMobileEskOnly: vi.fn(),
+  clearMobileO3Channel: vi.fn(),
   // Linux 专用的 xwid / SsoReport 这条线在 macos 下不该跑, 但 mock 必须补齐 client.ts 的
   // 全部导入, 少一个 vitest 就在访问时抛 "No export is defined on the mock".
   // buildLinuxXwidBody / signLinuxXwidBurst 返 null = 真实实现里 "没 inited / 老 .node" 的跳过分支。

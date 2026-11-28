@@ -2,7 +2,8 @@ import { DirectProtocolClient } from './client'
 import { Cmd } from './cmd'
 import { getLogger } from '../../support/logger'
 import { AppInfo, DeviceInfo } from './appInfo'
-import { getActiveProfile } from './profiles'
+import { getActiveProfile, isMobileFamily } from './profiles'
+import { getCachedMobileDevice } from './mobile/device'
 
 function encodeVarint(value: number | bigint): Buffer {
   const bytes: number[] = []
@@ -57,35 +58,50 @@ function buildSsoHeartBeat(): Buffer {
   ])
 }
 
-function buildRegisterDeviceInfo(): Buffer {
+function buildRegisterDeviceInfo(guid?: Buffer): Buffer {
+  const profile = getActiveProfile()
+  const mobileDev = isMobileFamily(profile.family)
+    ? getCachedMobileDevice(profile.name, guid?.toString('hex'))
+    : null
+  const devName = mobileDev?.deviceName || DeviceInfo.devName
+  const osDisplay = mobileDev && profile.mobile
+    ? `${profile.mobile.osDisplayPrefix} ${mobileDev.osVer}`
+    : profile.systemKernel
   const parts: Buffer[] = []
-  parts.push(protoStringField(1, DeviceInfo.devName))
+  parts.push(protoStringField(1, devName))
   parts.push(protoStringField(2, AppInfo.kernel))
-  parts.push(protoStringField(3, getActiveProfile().systemKernel))
-  parts.push(protoStringField(4, ''))
+  parts.push(protoStringField(3, osDisplay))
+  parts.push(protoStringField(4, profile.vendorName))
   parts.push(protoStringField(5, AppInfo.vendorOs))
   return Buffer.concat(parts)
 }
 
+function buildZeroPair(): Buffer {
+  return Buffer.concat([protoVarintField(1, 0), protoVarintField(2, 0)])
+}
+
 function buildRegisterInfo(guid: Buffer, isFirstOnline: boolean = true): Buffer {
+  const mobile = isMobileFamily(getActiveProfile().family)
   const parts: Buffer[] = []
   parts.push(protoStringField(1, guid.toString('hex')))
   parts.push(protoVarintField(2, 0))
   parts.push(protoStringField(3, AppInfo.currentVersion))
-  parts.push(protoVarintField(4, isFirstOnline ? 1 : 0))
+  parts.push(protoVarintField(4, mobile ? 0 : (isFirstOnline ? 1 : 0)))
   parts.push(protoVarintField(5, 2052))
-  parts.push(protoMessageField(6, buildRegisterDeviceInfo()))
+  parts.push(protoMessageField(6, buildRegisterDeviceInfo(guid)))
   parts.push(protoVarintField(7, 0))
-  // f8/f9/f10 as in a real QQ 3.2.28 capture
+  // f8/f9/f10 as in real QQ captures
   parts.push(protoVarintField(8, 0))
   parts.push(protoVarintField(9, 1))
-  const bizInfo = Buffer.concat([
-    protoVarintField(1, 0),
-    protoVarintField(2, 0),
-  ])
-  parts.push(protoMessageField(10, bizInfo))
+  parts.push(protoMessageField(10, buildZeroPair()))
   parts.push(protoVarintField(11, 0))
   parts.push(protoVarintField(12, 1))
+  if (mobile) {
+    parts.push(protoMessageField(14, buildZeroPair()))
+    parts.push(protoVarintField(16, 7))
+    parts.push(protoVarintField(17, 0))
+    parts.push(protoVarintField(18, 0))
+  }
   return Buffer.concat(parts)
 }
 
@@ -95,28 +111,39 @@ function buildC2cMsgCookie(): Buffer {
 }
 
 export function buildSsoInfoSync(guid: Buffer, isFirstOnline: boolean = true): Buffer {
+  const mobile = isMobileFamily(getActiveProfile().family)
+  const now = BigInt(Math.floor(Date.now() / 1000))
   const parts: Buffer[] = []
-  // 1759 on real QQ 3.2.28
+  // 1759 on real QQ 3.2.28 & mobile PoCs
   parts.push(protoVarintField(1, 1759))
   parts.push(protoVarintField(2, Math.floor(Math.random() * 0xFFFFFFFF)))
   parts.push(protoVarintField(4, 2))
-  parts.push(protoVarintField(5, 0n))
+  parts.push(protoVarintField(5, mobile ? now : 0n))
 
-  const c2cSync = Buffer.concat([
-    protoMessageField(1, buildC2cMsgCookie()),
-    protoVarintField(2, 0n),
-    protoMessageField(3, buildC2cMsgCookie()),
-  ])
+  const c2cSync = mobile
+    ? (() => {
+        const cookie = protoVarintField(1, now)
+        return Buffer.concat([
+          protoMessageField(1, cookie),
+          protoVarintField(2, now),
+          protoMessageField(3, cookie),
+        ])
+      })()
+    : Buffer.concat([
+        protoMessageField(1, buildC2cMsgCookie()),
+        protoVarintField(2, 0n),
+        protoMessageField(3, buildC2cMsgCookie()),
+      ])
   parts.push(protoMessageField(6, c2cSync))
 
-  // real QQ 3.2.28 sends an empty f8
+  // real QQ sends an empty f8
   parts.push(protoMessageField(8, Buffer.alloc(0)))
 
   parts.push(protoMessageField(9, buildRegisterInfo(guid, isFirstOnline)))
 
   const f10 = Buffer.concat([
     protoVarintField(2, 0),
-    protoMessageField(4, protoVarintField(1, 0)),
+    protoMessageField(4, mobile ? buildZeroPair() : protoVarintField(1, 0)),
   ])
   parts.push(protoMessageField(10, f10))
 
@@ -126,6 +153,10 @@ export function buildSsoInfoSync(guid: Buffer, isFirstOnline: boolean = true): B
     protoVarintField(3, 0),
   ])
   parts.push(protoMessageField(11, appState))
+
+  if (mobile) {
+    parts.push(protoMessageField(13, Buffer.alloc(0)))
+  }
 
   return Buffer.concat(parts)
 }

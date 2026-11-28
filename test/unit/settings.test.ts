@@ -14,7 +14,8 @@ describe('NT protocol login method', () => {
   it('is the pure protocol for any value it does not know', () => {
     expect(NTProtocolSchema({ mode: 'native' }).mode).toBe('native')
     expect(NTProtocolSchema({ mode: 'direct' }).mode).toBe('direct')
-    expect(NTProtocolSchema({}).mode).toBe('native')
+    expect(NTProtocolSchema({}).mode).toBe('direct')
+    expect(NTProtocolSchema({}).protocol).toBe('linux')
     for (const mode of ['nativeqq', 'pmhq', 'Native', 1]) expect(NTProtocolSchema({ mode } as never).mode).toBe('direct')
   })
 })

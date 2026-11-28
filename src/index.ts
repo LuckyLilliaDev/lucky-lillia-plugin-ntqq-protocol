@@ -60,12 +60,15 @@ export async function apply(ctx: Context, config: NTProtocolConfig) {
   ctx.plugin(LoginInfoRoutes)
   let selection = selectionOf(config)
   setProtocolSelection(selection)
-  // Only another mode, or another QQ for the bridge, remounts the protocol (logging the account out). The pure protocol
-  // reads its protocol once, as its client is created: before that a new one just applies, after it waits for a restart
+  // Remount when switching mode, changing pure-protocol profile, or changing the bridge's QQ executable / hook mode.
   ctx.on('internal/update', (next: NTProtocolConfig, restart) => {
     const updated = selectionOf(next)
-    const moved = updated.nativeQQ.qqPath !== selection.nativeQQ.qqPath || updated.nativeQQ.hookMode !== selection.nativeQQ.hookMode
-    if (updated.mode !== selection.mode || (updated.mode === 'native' && moved)) return restart()
+    const directMoved = updated.mode === 'direct' && updated.protocol !== selection.protocol
+    const nativeMoved = updated.mode === 'native' && (
+      updated.nativeQQ.qqPath !== selection.nativeQQ.qqPath ||
+      updated.nativeQQ.hookMode !== selection.nativeQQ.hookMode
+    )
+    if (updated.mode !== selection.mode || directMoved || nativeMoved) return restart()
     setProtocolSelection(selection = updated)
   })
   // Read on the next protocol start; saving automatic login must not interrupt the current account.

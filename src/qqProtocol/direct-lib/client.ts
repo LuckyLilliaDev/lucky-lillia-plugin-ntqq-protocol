@@ -3,12 +3,24 @@ import { TcpConnection } from './connection'
 import { buildServicePacket, buildServicePacket13, parseServicePacket, EncryptType, PacketContext, SsoPacket } from './packet'
 import { generateEcdhKeyPair, EcdhKeyPair } from './ecdh'
 import { generateWatchEcdhKeyPair } from './watch/ecdh'
-import { requestSign, setupSign, setSignMachineGuid, acquireSignToken, acquireMacosEskOnly, startLinuxSsoReport, stopLinuxSsoReport, buildLinuxXwidBody, signLinuxXwidBurst, startMacosSsoReport as runMacosSsoReport, macosEasyLogin as runMacosEasyLogin, SignResult, type MacosEskState } from './sign'
+import { requestSign, setupSign, setSignMachineGuid, acquireSignToken, acquireMacosEskOnly, acquireMobileEskOnly, clearMobileO3Channel, startLinuxSsoReport, stopLinuxSsoReport, buildLinuxXwidBody, signLinuxXwidBurst, startMacosSsoReport as runMacosSsoReport, macosEasyLogin as runMacosEasyLogin, SignResult, type MacosEskState } from './sign'
 import { getMacosDevice } from './macosDevice'
 import type { PersistedSession } from './session'
-import { AppInfo } from './appInfo'
-import { getActiveProfile } from './profiles'
+import { AppInfo, DeviceInfo } from './appInfo'
+import { getActiveProfile, isMobileFamily, supportsPasswordLogin } from './profiles'
 import { loadMachineGuidSync } from './machineGuid'
+import { getNativeAddon } from '../../native'
+import { getMobileDevice, type MobileDevice } from './mobile/device'
+import {
+  KEX_CMD,
+  EASY_LOGIN_CMD,
+  buildKexRequest,
+  parseKexResponse,
+  buildEasyLoginRequest,
+  parseNtLoginResponse,
+  type KexSession,
+  type NtLoginDeviceIdentity,
+} from './mobile/ntlogin'
 import { EventEmitter } from 'node:events'
 import { CmdNotPermittedError, CMD_NOT_PERMITTED_RET_CODE } from '../../support/protocolErrors'
 import { isCmdAllowed, CmdBlockedError, logCmdWhitelistStatus } from './cmdWhitelist'
@@ -81,9 +93,16 @@ export class DirectProtocolClient extends EventEmitter {
   }> = new Map()
   private signTokenRefreshInflight: Promise<void> | null = null
   private signTokenLastFetchAt = 0
-  // macOS ESK channel (token1 + keys), scoped to one TCP connection: dropped on close and
-  // re-established once its TTL lapses
+  // macOS ESK channel (token1 + ttl; keys stay in native .node), scoped to one TCP connection
   private macosEskState: MacosEskState | null = null
+  // iOS / HarmonyOS ESK state (token1 + ttl; O3 channel keys stay strictly in native .node)
+  private mobileEskState: MacosEskState | null = null
+  private mobileDevice: MobileDevice | null = null
+  private mobileDeviceProfile: string | null = null
+  private profileName: string
+  private connTs = Math.floor(Date.now() / 1000)
+  // Mobile NTLogin sends the target UIN in outer proto12 frames before session tickets arrive
+  private outerUinOverride: string | null = null
   // Bumped on every close, so an ESK still in flight when its connection dies gets discarded.
   private connEpoch = 0
   private heartbeatAliveTimer: NodeJS.Timeout | null = null
@@ -99,11 +118,13 @@ export class DirectProtocolClient extends EventEmitter {
 
   constructor(config: Partial<DirectClientConfig> = {}) {
     super()
+    const profile = getActiveProfile()
+    this.profileName = profile.name
     this.config = { ...defaultConfig(), ...config }
     this.guid = loadMachineGuidSync()
     this.conn = new TcpConnection()
     // watch wtlogin 用 P-256, 桌面用 secp192k1
-    this.ecdhKeyPair = getActiveProfile().family === 'watch' ? generateWatchEcdhKeyPair() : generateEcdhKeyPair()
+    this.ecdhKeyPair = profile.family === 'watch' ? generateWatchEcdhKeyPair() : generateEcdhKeyPair()
     recordKey('ecdh.privateKey', this.ecdhKeyPair.privateKey, 'wtlogin ECDH, per client instance')
     recordKey('ecdh.publicKey', this.ecdhKeyPair.publicKey, 'sent in the wtlogin frame head')
     recordKey('ecdh.shareKey', this.ecdhKeyPair.shareKey, 'TEA key of every wtlogin body')
@@ -117,6 +138,8 @@ export class DirectProtocolClient extends EventEmitter {
       this.stopTelemetry()
       this.connEpoch++
       this.macosEskState = null
+      this.mobileEskState = null
+      if (isMobileFamily(getActiveProfile().family)) clearMobileO3Channel()
       this.emit('close')
     })
   }
@@ -152,25 +175,134 @@ export class DirectProtocolClient extends EventEmitter {
     })
   }
 
+  /** Refresh cached profile metadata & ECDH keys when switching protocols across remounts on the shared client. */
+  syncProfile(): boolean {
+    const profile = getActiveProfile()
+    if (this.profileName === profile.name) return false
+    this.clearSession()
+    if (this.conn.isConnected) this.disconnect()
+    this.macosEskState = null
+    this.mobileEskState = null
+    clearMobileO3Channel()
+    this.mobileDevice = null
+    this.mobileDeviceProfile = null
+    this.unsupportedCmds.clear()
+    this.profileName = profile.name
+    this.config.appId = AppInfo.appId
+    this.config.subAppId = AppInfo.subAppId
+    this.config.ssoVersion = AppInfo.ssoVersion
+    this.config.buildVer = AppInfo.buildVer
+    this.ecdhKeyPair = profile.family === 'watch' ? generateWatchEcdhKeyPair() : generateEcdhKeyPair()
+    recordKey('ecdh.privateKey', this.ecdhKeyPair.privateKey, 'wtlogin ECDH, per client instance')
+    recordKey('ecdh.publicKey', this.ecdhKeyPair.publicKey, 'sent in the wtlogin frame head')
+    recordKey('ecdh.shareKey', this.ecdhKeyPair.shareKey, 'TEA key of every wtlogin body')
+    return true
+  }
+
   async connect(): Promise<void> {
+    this.syncProfile()
     logCmdWhitelistStatus()
     // 不在这里校验 token: 无效 token 会让 native SDK process.exit, 校验走 validateAuthToken (HTTP)
     await this.ensureSignSetup()
     await this.conn.connect({ useIPv6: this.config.useIPv6 })
+    this.connTs = Math.floor(Date.now() / 1000)
     this.emit('connected')
     this.startLoopLagMonitor()
 
-    // Heartbeat.Alive 是 NT 端后续命令的前置包
-    await this.sendHeartbeat()
+    if (isMobileFamily(getActiveProfile().family)) {
+      await this.getMobileDeviceInfo().catch((e) => {
+        logger.warn(`[MobileDevice] init failed: ${(e as Error).message}`)
+      })
+      await this.sendCorrectTime()
+    } else {
+      // Heartbeat.Alive 是 NT 端后续命令的前置包
+      await this.sendHeartbeat()
+    }
     this.startHeartbeatAlive()
   }
 
+  /** Mobile (iOS / HarmonyOS): send Client.CorrectTime right after TCP connect, matching PoC & real clients. */
+  async sendCorrectTime(): Promise<void> {
+    const seq = this.nextSeq()
+    const ctx = this.getPacketContext(false)
+    const payload = Buffer.alloc(4)
+    payload.writeUInt32BE(Math.floor(Date.now() / 1000) >>> 0)
+    const packet = buildServicePacket(seq, 'Client.CorrectTime', ctx, payload, EncryptType.NoEncrypt, null)
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.pendingPackets.delete(seq)
+        resolve()
+      }, 5000)
+      this.pendingPackets.set(seq, {
+        resolve: () => { clearTimeout(timer); resolve() },
+        reject: () => { clearTimeout(timer); resolve() },
+        timeout: timer,
+      })
+      this.conn.send(packet)
+    })
+  }
+
   /**
-   * macOS: ESK right after connect, before trans_emp / session restore, as real clients do. Failures only
-   * warn: the post-login token acquire retries it.
+   * macOS / iOS / HarmonyOS: ESK right after connect, before login / session restore, as real clients do.
+   * Failures only warn: the post-login token acquire retries it.
    */
   async acquirePreLoginToken(): Promise<void> {
+    if (isMobileFamily(getActiveProfile().family)) {
+      await this.ensureMobileEsk()
+      return
+    }
     await this.ensureMacosEsk()
+  }
+
+  private liveMobileEsk(): MacosEskState | null {
+    const esk = this.mobileEskState
+    return esk && Date.now() < esk.expiresAt ? esk : null
+  }
+
+  async getMobileDeviceInfo(): Promise<MobileDevice> {
+    const profile = getActiveProfile()
+    if (
+      this.mobileDevice &&
+      this.mobileDeviceProfile === profile.name &&
+      this.mobileDevice.guidHex === this.guid.toString('hex')
+    ) {
+      return this.mobileDevice
+    }
+    const dev = await getMobileDevice(profile, this.guid)
+    this.mobileDevice = dev
+    this.mobileDeviceProfile = profile.name
+    return dev
+  }
+
+  async getNtLoginDeviceInfo(): Promise<NtLoginDeviceIdentity> {
+    const profile = getActiveProfile()
+    if (isMobileFamily(profile.family)) {
+      return await this.getMobileDeviceInfo()
+    }
+    return {
+      guid: this.guid,
+      deviceName: DeviceInfo.devName,
+      model: profile.devType,
+    }
+  }
+
+  /** Native-backed pre-login ESK (`SsoEstablishShareKey`) for iOS & HarmonyOS; O3 keys stay in .node. */
+  private async ensureMobileEsk(): Promise<MacosEskState | null> {
+    const profile = getActiveProfile()
+    if (!isMobileFamily(profile.family) || !this.config.authToken) return null
+    const live = this.liveMobileEsk()
+    if (live) return live
+    const epoch = this.connEpoch
+    try {
+      const esk = await acquireMobileEskOnly(profile, this.guid)
+      if (epoch !== this.connEpoch) return null
+      this.mobileEskState = esk
+      logger.info(`[SignToken][${profile.name}] ESK acquired (token ${esk.token.length}B) ttl=${esk.ttlSecs}s`)
+      return esk
+    } catch (e) {
+      logger.warn(`[SignToken][${profile.name}] ESK failed: ${(e as Error).message}`)
+      return null
+    }
   }
 
   private liveMacosEsk(): MacosEskState | null {
@@ -202,7 +334,12 @@ export class DirectProtocolClient extends EventEmitter {
    * sa2_token, or a live ESK token1 until SA2 lands. signToken12B === '' is the 403 soft-degrade: no ESK fallback.
    */
   private protocolTokenFor(cmd: string): string | undefined {
-    if (getActiveProfile().name !== 'macos') return this.session?.signToken12B
+    const profile = getActiveProfile()
+    if (isMobileFamily(profile.family)) {
+      if (cmd === 'trpc.o3.ecdh_access.EcdhAccess.SsoEstablishShareKey') return undefined
+      return this.session?.signToken12B || this.liveMobileEsk()?.token
+    }
+    if (profile.name !== 'macos') return this.session?.signToken12B
     if (!this.session || cmd.includes('ecdh_access')) return undefined
     return this.session.signToken12B ?? this.liveMacosEsk()?.token
   }
@@ -381,18 +518,28 @@ export class DirectProtocolClient extends EventEmitter {
     return this.seq++
   }
 
-  private getPacketContext(): PacketContext {
+  private getPacketContext(forSessionEnc = true): PacketContext {
+    const mobile = isMobileFamily(getActiveProfile().family)
+    const includeSessionHead = !mobile || forSessionEnc
     return {
-      uin: this.session?.uin || '0',
-      uid: this.session?.uid || '',
+      uin: this.session?.uin || this.outerUinOverride || '0',
+      uid: includeSessionHead ? (this.session?.uid || '') : '',
       d2: this.session?.d2 || Buffer.alloc(0),
       d2Key: this.session?.d2Key || Buffer.alloc(16),
-      tgt: this.session?.tgt || Buffer.alloc(0),
+      tgt: includeSessionHead ? (this.session?.tgt || Buffer.alloc(0)) : Buffer.alloc(0),
       guid: this.guid,
       appId: this.config.appId,
       subAppId: this.config.subAppId,
       buildVer: this.config.buildVer,
+      qimei36: mobile ? (this.mobileDevice?.qimei36 || '') : undefined,
+      connTs: this.connTs,
     }
+  }
+
+  private wantsMobileSessionEncryption(cmd: string): boolean {
+    if (!this.session) return false
+    if (cmd.includes('SsoSecureA2')) return true
+    return !(cmd.includes('login.ecdh') || cmd.includes('ecdh_access') || cmd.includes('.o3.report.'))
   }
 
   async sendCommand(cmd: string, payload: Buffer, encryptType?: EncryptType, timeout = 15000, skipSign = false, signTokenOverride?: string): Promise<SsoPacket> {
@@ -400,8 +547,12 @@ export class DirectProtocolClient extends EventEmitter {
     if (!isCmdAllowed(cmd)) throw new CmdBlockedError(cmd)
     const seq = this.nextSeq()
     const session = this.session
-    const ctx = this.getPacketContext()
-    const enc = encryptType ?? (this.session ? EncryptType.EncryptD2Key : EncryptType.EncryptEmpty)
+    const profile = getActiveProfile()
+    const mobile = isMobileFamily(profile.family)
+    const enc = encryptType ?? (mobile
+      ? (this.wantsMobileSessionEncryption(cmd) ? EncryptType.EncryptD2Key : EncryptType.EncryptEmpty)
+      : (this.session ? EncryptType.EncryptD2Key : EncryptType.EncryptEmpty))
+    const ctx = this.getPacketContext(enc === EncryptType.EncryptD2Key)
 
     const t0 = Date.now()
     let tTokenDone = t0
@@ -409,9 +560,14 @@ export class DirectProtocolClient extends EventEmitter {
 
     // skipSign: watch 的 trans_emp 签了会被拒绝扫码授权
     let signResult: SignResult | null = null
-    if (!skipSign && this.config.authToken && cmdNeedsSign(cmd, getActiveProfile().name)) {
-      // 快速登录时 session 可能解不开, config.uin 来自明文元数据 / -q; 不带 uin sign 服务器回 400
-      const uin = this.session?.uin ? Number(this.session.uin) : (this.config.uin || undefined)
+    if (!skipSign && this.config.authToken && cmdNeedsSign(cmd, profile.name)) {
+      // Pre-login ESK must not attach an unbound uin; NTLogin uses outerUinOverride (bound via /api/bu).
+      const isPreLoginEsk = !this.session && cmd === 'trpc.o3.ecdh_access.EcdhAccess.SsoEstablishShareKey'
+      const uin = isPreLoginEsk
+        ? undefined
+        : (this.session?.uin
+            ? Number(this.session.uin)
+            : ((this.outerUinOverride ? Number(this.outerUinOverride) : this.config.uin) || undefined))
       await this.ensureSignTokenFresh(uin)
       tTokenDone = Date.now()
       // SA 必须用 token1 签, 而此时 session.signToken12B 还没取到
@@ -532,6 +688,8 @@ export class DirectProtocolClient extends EventEmitter {
 
   setGuid(guid: Buffer): void {
     this.guid = guid
+    this.mobileDevice = null
+    this.mobileDeviceProfile = null
     setSignMachineGuid(guid)
   }
 
@@ -542,6 +700,74 @@ export class DirectProtocolClient extends EventEmitter {
 
   setUin(uin?: number): void {
     this.config.uin = uin
+  }
+
+  setOuterUin(uin: string | null): void {
+    this.outerUinOverride = uin
+  }
+
+  /**
+   * Bind a target QQ number to the user's ManagerServer token (`/api/bu`) before mobile NTLogin signs
+   * `SsoKeyExchange` / `SsoNTLogin*`. Surfaces 403/409 quota/conflict errors instead of triggering SDK exit.
+   */
+  async bindSignUin(uin: string): Promise<void> {
+    const num = Number(uin)
+    if (!Number.isFinite(num) || num <= 0) throw new Error(`无效 QQ 号: ${uin}`)
+    await this.ensureSignSetup()
+    const proxy = getNativeAddon()
+    if (typeof proxy.setUin === 'function') {
+      await proxy.setUin(num)
+    }
+    this.config.uin = num
+    this.outerUinOverride = uin
+  }
+
+  /** Run mobile `SsoKeyExchange` (P-256 ECDH -> 32B session_key + ticket). */
+  async mobileKex(uin: string): Promise<KexSession> {
+    const { body, ecdh } = buildKexRequest(uin, this.guid, Math.floor(Date.now() / 1000))
+    const resp = await this.sendCommand(KEX_CMD, body, EncryptType.EncryptEmpty)
+    const kex = parseKexResponse(ecdh, resp.payload)
+    if (!kex) throw new Error('SsoKeyExchange 响应解密 session_key 失败')
+    return kex
+  }
+
+  /** Passwordless EasyLogin using saved `a1` ticket (`persisted.tempPassword`). Returns null on failure. */
+  async mobileEasyLogin(
+    persisted: PersistedSession,
+  ): Promise<{ session: SessionInfo; a1Hex: string; nick: string } | null> {
+    const profile = getActiveProfile()
+    if (!supportsPasswordLogin(profile) || !persisted.tempPassword) return null
+    try {
+      await this.acquirePreLoginToken()
+      await this.bindSignUin(persisted.uin)
+      const dev = await this.getNtLoginDeviceInfo()
+      const kex = await this.mobileKex(persisted.uin)
+      const a1Buf = Buffer.from(persisted.tempPassword, 'hex')
+      const req = buildEasyLoginRequest(kex, profile, dev, persisted.uin, a1Buf)
+      const resp = await this.sendCommand(EASY_LOGIN_CMD, req, EncryptType.EncryptEmpty)
+      const tickets = parseNtLoginResponse(kex, resp.payload)
+      if (tickets.d2.length === 0 || tickets.d2Key.length !== 16) {
+        if (tickets.error) {
+          logger.warn(`[EasyLogin][${profile.name}] failed code=${tickets.error.code} ${tickets.error.title} ${tickets.error.msg}`)
+        }
+        return null
+      }
+      const nextA1 = tickets.a1.length > 0 ? tickets.a1 : a1Buf
+      const session: SessionInfo = {
+        uin: tickets.uin || persisted.uin,
+        uid: tickets.uid || persisted.uid,
+        d2: tickets.d2,
+        d2Key: tickets.d2Key,
+        tgt: tickets.tgtA2.length > 0 ? tickets.tgtA2 : Buffer.from(persisted.tgt ?? '', 'hex'),
+        a2: tickets.tgtA2.length > 0 ? tickets.tgtA2 : Buffer.from(persisted.tgt ?? '', 'hex'),
+        a2Key: Buffer.alloc(16),
+        sKey: Buffer.alloc(0),
+      }
+      return { session, a1Hex: nextA1.toString('hex'), nick: tickets.nick || persisted.nick || '' }
+    } catch (e) {
+      logger.warn(`[EasyLogin][${profile.name}] failed: ${(e as Error).message}`)
+      return null
+    }
   }
 
   getSession(): SessionInfo | null {
@@ -716,9 +942,15 @@ export class DirectProtocolClient extends EventEmitter {
     this.signTokenRefreshInflight = (async () => {
       try {
         this.signTokenLastFetchAt = Date.now()
-        // macOS: A2+SA2 need this connection's ESK channel; a renewal past its TTL re-runs ESK first.
-        const esk = await this.ensureMacosEsk()
-        const { token, ttlSecs } = await acquireSignToken(uin, AppInfo.qua, esk)
+        const isMobile = isMobileFamily(getActiveProfile().family)
+        // macOS & mobile: A2+SA2 need this connection's native ESK channel; a renewal past its TTL re-runs ESK first.
+        const esk = isMobile ? await this.ensureMobileEsk() : await this.ensureMacosEsk()
+        const { token, ttlSecs } = await acquireSignToken(
+          uin,
+          AppInfo.qua,
+          esk,
+          isMobile ? { guid: this.guid, currentToken: this.session?.signToken12B || esk?.token } : undefined,
+        )
         if (this.session) {
           this.session.signToken12B = token
           this.session.signTokenExpiresAt = Date.now() + ttlSecs * 1000
@@ -737,6 +969,7 @@ export class DirectProtocolClient extends EventEmitter {
 
   clearSession(): void {
     this.session = null
+    this.outerUinOverride = null
     stopLinuxSsoReport()
   }
 }

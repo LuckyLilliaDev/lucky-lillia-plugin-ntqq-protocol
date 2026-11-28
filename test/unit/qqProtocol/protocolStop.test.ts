@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DirectQQProtocol } from '../../../src/qqProtocol/direct'
 import { DirectProtocolClient, type SessionInfo } from '../../../src/qqProtocol/direct-lib/client'
 import { deleteSession, loadSession } from '../../../src/qqProtocol/direct-lib/session'
+import { getProtocol } from '../../../src/support/utils/environment'
+import { LINUX_PROFILE } from '../../../src/qqProtocol/direct-lib/profiles/linux'
+import { WATCH_PROFILE } from '../../../src/qqProtocol/direct-lib/profiles/watch'
 import type { SelfInfo } from '../../../src/ntqqapi/types'
 
 // Switching the NT protocol plugin off: everything the protocol started has to stop, and switching it back on
@@ -59,6 +62,8 @@ vi.mock('../../../src/qqProtocol/direct-lib/sign', () => ({
   buildLinuxXwidBody: vi.fn(() => null),
   signLinuxXwidBurst: vi.fn(async () => null),
   acquireMacosEskOnly: vi.fn(),
+  acquireMobileEskOnly: vi.fn(),
+  clearMobileO3Channel: vi.fn(),
 }))
 
 vi.mock('../../../src/qqProtocol/direct-lib/online', () => ({
@@ -214,5 +219,26 @@ describe('switching the direct protocol off', () => {
     expect(protocol['tokenWatcher'].start).toHaveBeenCalledTimes(1)
     await protocol['stop']()
     expect(protocol['tokenWatcher'].stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('refreshes shared client profile metadata and ECDH keys when switching protocol without restart', async () => {
+    vi.mocked(loadSession).mockReturnValue(undefined)
+    vi.mocked(getProtocol).mockReturnValue('linux')
+    const first = loggedIn(new DirectQQProtocol(new Context()))
+    await first['doInitDirectClient']('test-auth-token')
+    const client = first['directClient']!
+    expect(client['config'].appId).toBe(LINUX_PROFILE.appId)
+    const linuxPub = client.getEcdhPublicKey()
+    await first['stop']()
+
+    vi.mocked(getProtocol).mockReturnValue('watch')
+    const second = loggedIn(new DirectQQProtocol(new Context()))
+    await second['doInitDirectClient']('test-auth-token')
+    expect(second['directClient']).toBe(client)
+    expect(client['config'].appId).toBe(WATCH_PROFILE.appId)
+    expect(client['config'].buildVer).toBe(WATCH_PROFILE.buildVer)
+    expect(client.getEcdhPublicKey().equals(linuxPub)).toBe(false)
+    await second['stop']()
+    vi.mocked(getProtocol).mockReturnValue('linux')
   })
 })

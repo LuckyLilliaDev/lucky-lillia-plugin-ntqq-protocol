@@ -50,6 +50,29 @@ export interface QuickLoginAccounts {
 /** The installed protocol implementation cannot offer saved-account login. */
 export class QuickLoginUnsupportedError extends Error {}
 
+export type PasswordLoginPhase = 'idle' | 'logging_in' | 'captcha' | 'new_device_qr' | 'online' | 'error'
+
+export interface PasswordLoginState {
+  supported: boolean
+  phase: PasswordLoginPhase
+  uin?: string
+  message?: string
+  error?: string
+  captcha?: {
+    url: string
+    sid: string
+    appId: string
+    loginAppId?: string
+  }
+  newDevice?: {
+    qrUrl?: string
+    qrPng?: string
+    jumpUrl?: string
+    guaranteeStatus?: number
+    manualFallback: boolean
+  }
+}
+
 export abstract class QQProtocolBase extends Service {
   static inject = ['config']
 
@@ -128,6 +151,25 @@ export abstract class QQProtocolBase extends Service {
   public async quickLogin(_uin: string): Promise<void> {
     throw new Error('quickLogin not supported in this mode')
   }
+
+  /** Mobile NTLogin (iPad / iPhone / HarmonyPad / HarmonyPhone) password login state & interactive actions. */
+  public getPasswordLoginState(): PasswordLoginState {
+    return { supported: false, phase: 'idle' }
+  }
+
+  public async passwordLogin(_uin: string, _password: string): Promise<PasswordLoginState> {
+    throw new Error('当前协议不支持账号密码登录')
+  }
+
+  public async submitLoginCaptcha(_ticket: string, _randStr: string, _sid?: string): Promise<PasswordLoginState> {
+    throw new Error('当前协议不支持滑块验证码提交')
+  }
+
+  public async submitNewDeviceSig(_sig: string): Promise<PasswordLoginState> {
+    throw new Error('当前协议不支持新设备凭证提交')
+  }
+
+  public cancelPasswordLogin(): void {}
 
   /** 仅 Direct 实现 */
   public async logout(): Promise<void> {}

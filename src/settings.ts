@@ -9,13 +9,17 @@ export const NTProtocolSchema: Schema<NTProtocolConfig> = Schema.object({
     Schema.const('native').description('官方 QQ 客户端桥接'),
     // Anything else is the pure protocol: a mistyped --ntqq-mode, or nativeqq saved before the bridge was renamed
     Schema.transform(Schema.any(), () => 'direct' as const),
-  ]).default('native').description('登录方式'),
+  ]).default('direct').description('登录方式'),
   protocol: Schema.union([
     Schema.const('linux').description('Linux'),
     Schema.const('macos').description('macOS'),
     Schema.const('windows').description('Windows'),
-    Schema.const('watch').description('手表'),
-  ]).default('linux').description('纯协议模拟的 QQ 客户端'),
+    Schema.const('watch').description('Android 手表'),
+    Schema.const('ipad').description('iPad'),
+    Schema.const('iphone').description('iPhone'),
+    Schema.const('harmonypad').description('鸿蒙 Pad'),
+    Schema.const('harmony').description('鸿蒙手机'),
+  ]).default('linux').description('协议'),
   nativeQQ: Schema.object({
     qqPath: Schema.string().default('').description('QQ 可执行文件绝对路径（留空自动检测）'),
     hookMode: Schema.string().default('').hidden().description('NativeQQ 注入方式（留空：docker 里用 inline，其他用 NativeQQ 的默认）'),

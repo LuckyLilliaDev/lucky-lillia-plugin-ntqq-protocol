@@ -6,10 +6,14 @@ import { getProtocol } from './utils/environment'
 export const CMD_NOT_PERMITTED_RET_CODE = -10122
 
 const PROTOCOL_LABELS: Record<string, string> = {
-  watch: '手表',
+  watch: 'Android 手表',
   macos: 'macOS',
   windows: 'Windows',
   linux: 'Linux',
+  ipad: 'iPad',
+  iphone: 'iPhone',
+  harmonypad: '鸿蒙 Pad',
+  harmony: '鸿蒙手机',
 }
 
 // 只用于提示文案, 没登记的 cmd 用通用文案, 不必列全

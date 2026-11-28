@@ -3,6 +3,7 @@ export interface NativeSign {
   ping(): string
   setAuthToken(authToken: string): Promise<void>
   setMachineGuid?(guidHex: string): void
+  setUin?(uin: number): Promise<void>
   preflight(): Promise<string | null>
   /** 401/403 不 exit。返回 "valid" / "invalid" / "retry:<reason>" */
   validateAuthToken?(args: ValidateAuthTokenArgs): Promise<string>
@@ -11,6 +12,8 @@ export interface NativeSign {
   postEnvelope(args: PostEnvelopeArgs): Promise<string>
   /** ESK 拿 token1, 再 SA 换 token2 返回; 包走 bot 自己的 SSO, 不经 manager */
   getLinuxSAToken?(args: LinuxEskTokenArgs): Promise<LinuxTokenResult>
+  getWindowsQimei?(args: { guidHex: string }): Promise<string>
+  getWindowsEskToken?(args: { guidHex: string; qimei36: string; qua: string; uin: number }): Promise<{ token: string; ttlSecs: number }>
   startSsoReportLinux?(args: StartSsoReportLinuxArgs): Promise<void>
   stopSsoReport?(): void
   /** body 恒定, 每帧只有 sign 不同。reportId 默认是跨装机常量 "0df00071646" */
@@ -30,6 +33,19 @@ export interface NativeSign {
   startSsoReportMacos?(args: StartSsoReportMacosArgs): Promise<void>
   /** SsoKeyExchange + SsoNTLoginEasyLogin, 用存档的 0x106 刷新 d2 / d2key / tgt / 0x106。失败不抛, success=false */
   macosEasyLogin?(args: MacosEasyLoginArgs): Promise<MacosEasyLoginResult>
+  // ---- Mobile (iOS / HarmonyOS): QIMEI / device_pb / O3 token 全留在 .node 内 ----
+  /** HarmonyOS 在线取号 (走本机网络出口), 进程级缓存 */
+  getHarmonyQimei?(args: HarmonyQimeiArgs): Promise<HarmonyQimeiResult>
+  /** 回填磁盘持久化的 HarmonyOS qimei 到进程级缓存 */
+  setHarmonyQimei?(args: SetHarmonyQimeiArgs): void
+  /** 在原生模块内组装 iOS / HarmonyOS device_pb 并派生 iOS qimei36 */
+  buildMobileDevicePb?(args: MobileDevicePbArgs): MobileDevicePbResult
+  /** 移动端登录前 ESK 拿 token1; O3 通道密钥留在 .node 内 */
+  getMobileEskToken?(args: MobileEstablishArgs): Promise<MobileTokenResult>
+  /** 移动端登录后 A2Establish + A2Access 换取/续期 token2 */
+  getMobileLoginToken?(args: MobileLoginTokenArgs): Promise<MobileTokenResult>
+  /** 连接断开时清理 .node 内缓存的移动端 O3 通道 */
+  clearMobileO3Channel?(): void
 }
 
 export interface LinuxEskTokenArgs {
@@ -191,4 +207,63 @@ export interface AcquireSignTokenResult {
 export interface PostEnvelopeArgs {
   path: string
   plaintextJson: string
+}
+
+export interface HarmonyQimeiArgs {
+  seedHex: string
+  isPhone: boolean
+  qua: string
+  model?: string
+  osVer?: string
+  appKey?: string
+}
+
+export interface HarmonyQimeiResult {
+  qimei36: string
+  qimei16: string
+}
+
+export interface SetHarmonyQimeiArgs {
+  seedHex: string
+  isPhone: boolean
+  qimei36: string
+  qimei16?: string
+}
+
+export interface MobileDevicePbArgs {
+  platform: 'ios' | 'harmony'
+  isPhone: boolean
+  seedHex: string
+  qua: string
+  packageName: string
+  ptVersion: string
+  buildVer: string
+  deviceName: string
+  model: string
+  osVer: string
+  q36?: string
+  xwid?: string
+  vendorName?: string
+  screenMetrics?: string[]
+}
+
+export interface MobileDevicePbResult {
+  devicePbHex: string
+  qimei36: string
+}
+
+export interface MobileEstablishArgs {
+  devicePbHex: string
+  tsMs?: number
+}
+
+export interface MobileLoginTokenArgs {
+  devicePbHex: string
+  currentToken?: string
+  tsMs?: number
+}
+
+export interface MobileTokenResult {
+  token: string
+  ttlSecs: number
 }

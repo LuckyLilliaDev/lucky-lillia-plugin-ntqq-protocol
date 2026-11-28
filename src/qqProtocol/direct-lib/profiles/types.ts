@@ -1,18 +1,35 @@
 // 每端一份协议 profile, 字段值溯源见 LuckyLillia.Sign/docs/Linux/appinfo-cross-platform.md
 
-export type ProtocolName = 'linux' | 'windows' | 'macos' | 'watch'
+export type ProtocolName = 'linux' | 'windows' | 'macos' | 'watch' | 'ipad' | 'iphone' | 'harmonypad' | 'harmony'
 
 // nt: Linux/Windows/macOS 共用 trans_emp 二维码登录 + NT SSO head + secp192k1。
 // watch: Android-NT 变体 (P-256 wtlogin + watch reserve + 21 TLV + qimei36)。
-export type ProtocolFamily = 'nt' | 'watch'
+// ios / harmony: 移动端 NTLogin (账号密码 + 滑块/新设备验证 + EasyLogin + 纯 TS O3 ESK/SA2)。
+export type ProtocolFamily = 'nt' | 'watch' | 'ios' | 'harmony'
+
+export type ProtocolLoginMethod = 'qr' | 'password'
 
 // SSO reserve field 组合:
-//   nt    = 现有最小集 f15(TraceParent)/16(Uid)/24(SecInfo), Linux/Windows 用
-//   macos = f9,f12,f14,f15,f16,f18-21,f23,f24,f26,f28,f34 (macOS/PoC/src/main.rs)
-//   watch = nt + f12(qimei36)/21(=32)/26(=100) (Android NT marker)
-export type ReserveVariant = 'nt' | 'linux' | 'macos' | 'watch'
+//   nt      = 现有最小集 f15(TraceParent)/16(Uid)/24(SecInfo), Windows 用
+//   linux   = Linux 3.2.28/3.2.35 抓包布局
+//   macos   = f9,f12,f14,f15,f16,f18-21,f23,f24,f26,f28,f34
+//   watch   = nt + f12(qimei36)/21(=32)/26(=100) (Android NT marker)
+//   ios     = iOS 9.3.5 布局 (f9,f12=qimei36/guid,f14,f15,f16,f18..21,f23,f24,f26=100,f28=3,f34=1)
+//   harmony = HarmonyOS 9.2.71 布局 (同 iOS, f12 仅在真实 qimei36 非空时发, f21 按签名/o3 设 0/2/32/34)
+export type ReserveVariant = 'nt' | 'linux' | 'macos' | 'watch' | 'ios' | 'harmony'
 
 export type WtLoginCurve = 'secp192k1' | 'secp256r1'
+
+export interface MobileProfileExtra {
+  isPhone: boolean
+  ntAppName: string
+  ntPlatform: number
+  ntDeviceType?: string
+  defaultModel: string
+  defaultOsVer: string
+  screenMetrics: [string, string, string]
+  osDisplayPrefix: string
+}
 
 export interface WatchProfileExtra {
   headAppId: number       // SSO head 路由 appid (537065138), 与身份 appId(16)/subAppId 不同
@@ -27,6 +44,7 @@ export interface WatchProfileExtra {
 export interface ProtocolProfile {
   name: ProtocolName
   family: ProtocolFamily
+  loginMethod?: ProtocolLoginMethod
 
   // ---- 身份 / 版本 ----
   appId: number
@@ -78,4 +96,7 @@ export interface ProtocolProfile {
 
   // ---- watch 专属 ----
   watch?: WatchProfileExtra
+
+  // ---- iOS / HarmonyOS 移动端专属 ----
+  mobile?: MobileProfileExtra
 }

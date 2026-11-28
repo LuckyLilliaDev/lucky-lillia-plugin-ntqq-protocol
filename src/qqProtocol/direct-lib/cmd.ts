@@ -1,6 +1,7 @@
 // 出站 SSO cmd 常量和各平台的签名白名单。签名面积目前是旧的 532 条超集, 原因见 EFFECTIVE_SIGN
 
 import type { ProtocolName } from './profiles'
+import { IOS_SIGN_CMDS, IOS_SIGN_PREFIX, HARMONY_SIGN_CMDS } from './mobile/whitelists'
 
 // sendOidb(0xNNN, sub) 的数字调用不引用这里的常量, 登记在这里是为了签名白名单匹配
 export const Cmd = {
@@ -13,6 +14,7 @@ export const Cmd = {
 
   Ecdh: {
     KeyExchange: 'trpc.login.ecdh.EcdhService.SsoKeyExchange',
+    NTLoginGetSaltList: 'trpc.login.ecdh.EcdhService.SsoNTLoginGetSaltList',
     NTLoginEasyLogin: 'trpc.login.ecdh.EcdhService.SsoNTLoginEasyLogin',
     NTLoginEasyLoginUnusualDevice: 'trpc.login.ecdh.EcdhService.SsoNTLoginEasyLoginUnusualDevice',
     NTLoginPasswordLogin: 'trpc.login.ecdh.EcdhService.SsoNTLoginPasswordLogin',
@@ -822,8 +824,15 @@ export const SIGN_REQUIRED: Record<ProtocolName, ReadonlySet<string>> = {
   windows: EFFECTIVE_SIGN,
   macos: EFFECTIVE_SIGN,
   watch: EFFECTIVE_SIGN,
+  ipad: IOS_SIGN_CMDS,
+  iphone: IOS_SIGN_CMDS,
+  harmonypad: HARMONY_SIGN_CMDS,
+  harmony: HARMONY_SIGN_CMDS,
 }
 
 export function cmdNeedsSign(cmd: string, platform: ProtocolName): boolean {
+  if ((platform === 'ipad' || platform === 'iphone') && cmd.startsWith(IOS_SIGN_PREFIX)) {
+    return true
+  }
   return SIGN_REQUIRED[platform]?.has(cmd) ?? false
 }

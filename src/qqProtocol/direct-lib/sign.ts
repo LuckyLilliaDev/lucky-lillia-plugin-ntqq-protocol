@@ -1,9 +1,11 @@
 import { getLogger, isDebugEnabled } from '../../support/logger'
-import { getActiveProfile } from './profiles'
+import { getActiveProfile, type ProtocolProfile } from './profiles'
 import { getCdn, getProtocol } from '../../support/utils/environment'
 import { loadMachineGuidSync } from './machineGuid'
 import { device32FromGuid } from './watch/device32'
 import { getMacosDevice } from './macosDevice'
+import { getMobileDevice } from './mobile/device'
+import { getWindowsQimei } from './windowsDevice'
 import { getNativeAddon } from '../../native'
 import type { RelayPacket, SignLog } from '../../native/sign-types'
 import { nativeRelay, nativeWasInitialized } from '../../native/relay'
@@ -189,7 +191,17 @@ export interface MacosEskState {
   expiresAt: number
 }
 
-export async function acquireSignToken(uin: number, qua: string, macosEsk?: MacosEskState | null): Promise<{ token: string; ttlSecs: number }> {
+export interface AcquireSignTokenOpts {
+  guid?: Buffer
+  currentToken?: string
+}
+
+export async function acquireSignToken(
+  uin: number,
+  qua: string,
+  macosEsk?: MacosEskState | null,
+  opts?: AcquireSignTokenOpts,
+): Promise<{ token: string; ttlSecs: number }> {
   if (!inited) throw new Error('sign not initialized')
   switch (getProtocol()) {
     case 'macos':
@@ -197,6 +209,21 @@ export async function acquireSignToken(uin: number, qua: string, macosEsk?: Maco
       return macosEsk ? acquireMacosA2Token(qua, macosEsk) : acquireMacosSignToken(qua)
     case 'linux':
       return acquireLinuxSignToken(uin, qua)
+    case 'windows': {
+      const proxy = getNativeAddon()
+      if (typeof proxy.getWindowsEskToken !== 'function') {
+        throw new Error('原生模块缺少 getWindowsEskToken，请更新 LuckyLillia.NTQQ.node')
+      }
+      const guid = opts?.guid ?? loadMachineGuidSync()
+      const qimei36 = await getWindowsQimei(guid)
+      const result = await proxy.getWindowsEskToken({ guidHex: guid.toString('hex'), qimei36, qua, uin })
+      return { token: result.token, ttlSecs: result.ttlSecs || DEFAULT_TOKEN_TTL_SECS }
+    }
+    case 'ipad':
+    case 'iphone':
+    case 'harmonypad':
+    case 'harmony':
+      return acquireMobileSignToken(macosEsk, opts)
     // 别并进 linux 分支: 本地 ESK 真会往 QQ 发包, 会从别的端的连接上发出 Linux 形状的 ESK。watch 不会走到这里
     default:
       return acquireViaManager(uin, qua)
@@ -391,6 +418,69 @@ async function acquireMacosA2Token(qua: string, esk: MacosEskState): Promise<{ t
     logger.warn('[SignToken][macos] A2+SA2 都没解出 token, 本轮用空 deviceToken')
   }
   return { token, ttlSecs }
+}
+
+function ensureMobileO3Exports(): void {
+  const proxy = getNativeAddon()
+  if (typeof proxy.getMobileEskToken !== 'function' || typeof proxy.getMobileLoginToken !== 'function') {
+    throw new Error('LuckyLillia.NTQQ.node 过旧 (缺移动端 o3 token 方法), 请重新 build 并 sync:plugin')
+  }
+}
+
+/** Mobile (iOS / HarmonyOS): pre-login ESK runs inside native .node; channel keys never enter JS. */
+export async function acquireMobileEskOnly(profile: ProtocolProfile, guid: Buffer): Promise<MacosEskState> {
+  if (!inited) throw new Error('sign not initialized')
+  ensureMobileO3Exports()
+  const { devicePbHex } = await getMobileDevice(profile, guid)
+  const esk = await getNativeAddon().getMobileEskToken!({ devicePbHex, tsMs: Date.now() })
+  const ttlSecs = esk.ttlSecs || DEFAULT_TOKEN_TTL_SECS
+  logger.debug(`[SignToken][${profile.name}] ESK token=${esk.token ? esk.token.length + 'B' : 'empty'} ttl=${ttlSecs}s`)
+  return { token: esk.token, ttlSecs, expiresAt: Date.now() + ttlSecs * 1000 }
+}
+
+/** Mobile (iOS / HarmonyOS): post-login / renewal A2Establish + A2Access inside native .node. */
+async function acquireMobileSignToken(
+  esk?: MacosEskState | null,
+  opts?: AcquireSignTokenOpts,
+): Promise<{ token: string; ttlSecs: number }> {
+  ensureMobileO3Exports()
+  const proxy = getNativeAddon()
+  const profile = getActiveProfile()
+  const guid = opts?.guid ?? loadMachineGuidSync()
+  const { devicePbHex } = await getMobileDevice(profile, guid)
+
+  let eskToken = esk?.token ?? ''
+  let eskTtl = esk?.ttlSecs ?? 0
+  if (!esk) {
+    const fresh = await proxy.getMobileEskToken!({ devicePbHex, tsMs: Date.now() })
+    eskToken = fresh.token
+    eskTtl = fresh.ttlSecs
+    logger.debug(`[SignToken][${profile.name}] ESK token=${eskToken ? eskToken.length + 'B' : 'empty'} ttl=${eskTtl}s`)
+  }
+
+  const login = await proxy.getMobileLoginToken!({
+    devicePbHex,
+    currentToken: opts?.currentToken || eskToken || undefined,
+    tsMs: Date.now(),
+  })
+  const token = login.token || eskToken
+  const ttlSecs = login.ttlSecs || eskTtl || DEFAULT_TOKEN_TTL_SECS
+  if (!token) {
+    logger.warn(`[SignToken][${profile.name}] ESK + A2/SA2 都没解出 token, 本轮用空 deviceToken`)
+  }
+  return { token, ttlSecs }
+}
+
+/** Drop cached native mobile O3 channel when the TCP connection closes. */
+export function clearMobileO3Channel(): void {
+  if (!inited) return
+  const fn = getNativeAddon().clearMobileO3Channel
+  if (typeof fn !== 'function') return
+  try {
+    fn()
+  } catch {
+    // ignore
+  }
 }
 
 /**

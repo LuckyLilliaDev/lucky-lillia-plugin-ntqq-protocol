@@ -63,6 +63,64 @@ export function createLoginRoutes(ctx: Context): Hono {
     }
   })
 
+  // 移动端 (iPad / iPhone / 鸿蒙 Pad / 鸿蒙手机) 账号密码登录状态机与交互接口
+  router.get('/login-state', (c) => {
+    return c.json({
+      success: true,
+      data: ctx.qqProtocol.getPasswordLoginState(),
+    })
+  })
+
+  router.post('/password-login', async (c) => {
+    const body = await c.req.json().catch(() => ({})) as { uin?: string; password?: string }
+    const uin = String(body.uin ?? '').trim()
+    const password = String(body.password ?? '')
+    if (!uin || !password) {
+      return c.json({ success: false, message: '请填写 QQ 号和密码' }, 400)
+    }
+    try {
+      const state = await ctx.qqProtocol.passwordLogin(uin, password)
+      return c.json({ success: true, data: state })
+    } catch (e) {
+      return c.json({ success: false, message: (e as Error).message || '密码登录失败' }, 400)
+    }
+  })
+
+  router.post('/login-captcha', async (c) => {
+    const body = await c.req.json().catch(() => ({})) as { ticket?: string; randstr?: string; randStr?: string; sid?: string }
+    const ticket = String(body.ticket ?? '').trim()
+    const randStr = String(body.randstr ?? body.randStr ?? '').trim()
+    const sid = body.sid ? String(body.sid).trim() : undefined
+    if (!ticket || !randStr) {
+      return c.json({ success: false, message: '请填写完整的 ticket 和 randstr' }, 400)
+    }
+    try {
+      const state = await ctx.qqProtocol.submitLoginCaptcha(ticket, randStr, sid)
+      return c.json({ success: true, data: state })
+    } catch (e) {
+      return c.json({ success: false, message: (e as Error).message || '提交滑块验证失败' }, 400)
+    }
+  })
+
+  router.post('/login-new-device', async (c) => {
+    const body = await c.req.json().catch(() => ({})) as { sig?: string }
+    const sig = String(body.sig ?? '').trim()
+    if (!sig) {
+      return c.json({ success: false, message: '请填写新设备验证凭证' }, 400)
+    }
+    try {
+      const state = await ctx.qqProtocol.submitNewDeviceSig(sig)
+      return c.json({ success: true, data: state })
+    } catch (e) {
+      return c.json({ success: false, message: (e as Error).message || '提交新设备验证失败' }, 400)
+    }
+  })
+
+  router.post('/login-cancel', (c) => {
+    ctx.qqProtocol.cancelPasswordLogin()
+    return c.json({ success: true })
+  })
+
   // NativeQQ 模式的登录归外部 QQ 客户端管, 直接拒绝
   router.post('/logout', async (c) => {
     if (isNativeQQMode()) {
@@ -87,7 +145,19 @@ export const NTLoginRoutes = {
     const app = new Hono()
       .route('/api', createLoginRoutes(ctx))
       .route('/api', createAuthTokenRoutes(ctx))
-    for (const prefix of ['/api/login-qrcode', '/api/quick-login-list', '/api/quick-login', '/api/logout', '/api/auth-token', '/api/nativeqq/launch']) {
+    for (const prefix of [
+      '/api/login-qrcode',
+      '/api/quick-login-list',
+      '/api/quick-login',
+      '/api/login-state',
+      '/api/password-login',
+      '/api/login-captcha',
+      '/api/login-new-device',
+      '/api/login-cancel',
+      '/api/logout',
+      '/api/auth-token',
+      '/api/nativeqq/launch',
+    ]) {
       ctx.webuiServer.route(prefix, app)
     }
   },

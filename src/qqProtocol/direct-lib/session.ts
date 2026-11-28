@@ -150,7 +150,7 @@ export function listAvailableSessions(): Array<{ uin: string; uid: string; nick:
   const out: Array<{ uin: string; uid: string; nick: string; savedAt: number; protocol: ProtocolId }> = []
   for (const name of entries) {
     // 无后缀 = linux; 带后缀 = 对应协议
-    const m = /^qq-session-(\d+)(?:-(linux|windows|macos|watch))?\.json$/.exec(name)
+    const m = /^qq-session-(\d+)(?:-(linux|windows|macos|watch|ipad|iphone|harmonypad|harmony))?\.json$/.exec(name)
     if (!m) continue
     const fileProtocol = (m[2] as ProtocolId) || 'linux'
     if (fileProtocol !== active) continue

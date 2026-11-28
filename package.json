@@ -47,7 +47,7 @@
     "webui": "./lib/client/index.js",
     "launch": [
       { "field": "mode", "arg": "--ntqq-mode", "env": "NTQQ_MODE" },
-      { "field": "protocol", "arg": "--ntqq-protocol", "env": "NTQQ_PROTOCOL", "aliases": { "win": "windows", "mac": "macos", "darwin": "macos", "wat": "watch" } },
+      { "field": "protocol", "arg": "--ntqq-protocol", "env": "NTQQ_PROTOCOL", "aliases": { "win": "windows", "mac": "macos", "darwin": "macos", "wat": "watch", "ios": "ipad", "ios-pad": "ipad", "ios-phone": "iphone", "harmony-pad": "harmonypad", "harmony-phone": "harmony", "ohos": "harmony", "ohos-pad": "harmonypad" } },
       { "field": "signCDN", "arg": "--ntqq-sign-cdn", "env": "NTQQ_SIGN_CDN" },
       { "field": "autoLoginUin", "arg": "--ntqq-account", "env": "NTQQ_ACCOUNT" },
       { "field": "nativeQQ.qqPath", "arg": "--ntqq-qq-path", "env": "NTQQ_QQ_PATH" },

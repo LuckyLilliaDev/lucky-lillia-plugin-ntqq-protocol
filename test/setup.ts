@@ -45,7 +45,6 @@ vi.mock('../src/support/utils/environment', async original => ({
   currentNativeQQ: vi.fn(() => ({ qqPath: '', hookMode: '' })),
   getProtocol: vi.fn(() => 'linux'),
   getCdn: vi.fn(() => 'cf'),
-  lockedProtocol: vi.fn(() => undefined),
   isDevMode: vi.fn(() => false),
 }))
 afterAll(() => {

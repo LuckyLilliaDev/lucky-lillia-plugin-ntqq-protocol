@@ -1,6 +1,7 @@
 import { Context } from 'cordis'
 import { Hono } from 'hono'
-import { currentNativeQQ, getProtocol, isNativeQQMode, lockedProtocol } from './support/utils/environment'
+import { currentNativeQQ, getProtocol, isNativeQQMode } from './support/utils/environment'
+import { getSupportedLoginMethods, isMobileProtocol } from './qqProtocol/direct-lib/profiles'
 import { detectQQPath } from './qqPath'
 
 /** The account and the login method as the NTQQ page shows them, and whether the protocol runs. */
@@ -10,6 +11,7 @@ export function createLoginInfoRoutes(ctx: Context): Hono {
   router.get('/login-info', async (c) => {
     const protocol = ctx.get('qqProtocol')
     const nativeQQ = isNativeQQMode()
+    const activeProtocol = getProtocol()
     // The protocol's own record of the account: with the protocol off there is none
     const account = protocol?.selfInfo ?? { uid: '', uin: '', nick: '', online: false }
     // The bridge's state is NativeQQ's: its session, QQ's process, the account
@@ -20,9 +22,9 @@ export function createLoginInfoRoutes(ctx: Context): Hono {
         ...account,
         mode: nativeQQ ? 'native' : 'direct',
         ntProtocol: !!protocol,
-        protocol: getProtocol(),
-        // Set once the pure protocol has a client: a protocol saved after that applies on the next start
-        lockedProtocol: lockedProtocol(),
+        protocol: activeProtocol,
+        loginMethod: !nativeQQ && isMobileProtocol(activeProtocol) ? 'password' : 'qr',
+        loginMethods: nativeQQ ? ['qr'] : getSupportedLoginMethods(activeProtocol),
         ...nativeQQ && { nativeQQ: { qqPath: currentNativeQQ().qqPath, connected: !!protocol?.get_is_connected(), ...status && { status } } },
       },
     })

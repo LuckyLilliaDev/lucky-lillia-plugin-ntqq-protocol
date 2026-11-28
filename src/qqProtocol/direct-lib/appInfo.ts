@@ -1,9 +1,7 @@
-import { createHash } from 'node:crypto'
 import { getActiveProfile } from './profiles'
 import { loadMachineGuidSync } from './machineGuid'
 
-// The current protocol profile, flat. Read on access: until the pure protocol has a client, the protocol follows
-// the NT protocol plugin's settings. Branch on the family with getActiveProfile()
+// The current protocol profile, flat. Read dynamically on access; branch on the family with getActiveProfile().
 export const AppInfo = {
   get os() { return getActiveProfile().os },
   get kernel() { return getActiveProfile().kernel },
@@ -25,26 +23,10 @@ export const AppInfo = {
   get qua() { return getActiveProfile().qua },
 }
 
-// SsoInfoSync device f1 / T16E / TlvD1 f1.f2 = 主机名。写死一个会让所有部署聚成一簇, 所以从 machine guid 派生,
-// 形状取 Windows 装机默认名 `DESKTOP-` + 7 位大写字母数字 (WSL2 主机名继承 Windows 机器名, 跟 WSL2 内核串自洽)。
-// 不能含 "docker": 真机拿 gethostname 做 strstr("docker") 判定容器。macOS 用 LLBOT_DEV_NAME 覆盖。改派生盐 = 换设备名
-const DEV_NAME_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-
-function synthDevName(): string {
-  const h = createHash('sha256').update('llbot-devname-v1').update(loadMachineGuidSync()).digest()
-  let v = h.readBigUInt64BE(0)
-  let suffix = ''
-  for (let i = 0; i < 7; i++) {
-    suffix += DEV_NAME_ALPHABET[Number(v % 36n)]
-    v /= 36n
-  }
-  return `DESKTOP-${suffix}`
-}
-
 export const DeviceInfo = {
   get devType() { return getActiveProfile().devType },
   get devName(): string {
-    return process.env.LLBOT_DEV_NAME?.trim() || synthDevName()
+    return process.env.LLBOT_DEV_NAME?.trim() || `LuckyLillia-${loadMachineGuidSync().toString('hex').slice(0, 6)}`
   },
   get osVer() { return getActiveProfile().osVer },
   get vendorName() { return getActiveProfile().vendorName },

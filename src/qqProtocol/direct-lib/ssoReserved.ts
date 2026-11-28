@@ -144,13 +144,83 @@ export function buildWatchReservedField(uid?: string, signResult?: SignResult | 
   return Buffer.concat(parts)
 }
 
+// iOS 9.3.5 reserve (LuckyLillia.Sign/src/iOS/PoC/src/frame.rs):
+//   f9=1 [f12=qimei36||guid] [!login&&!o3: f14=1] [!o3: f15=TraceParent(00-..-01)] [!o3&&uid: f16=uid]
+//   f18=0 f19=1 f20=3 f21=(isO3 ? 0 : 2) f23={1:"client_conn_seq",2:connTs} [f24=SecInfo] f26=100 f28=3 f34=1
+export function buildIosReservedField(
+  cmd: string,
+  qimeiOrGuid: string,
+  uid?: string,
+  connTs: number = Math.floor(Date.now() / 1000),
+  signResult?: SignResult | null,
+): Buffer {
+  const isO3 = cmd.startsWith('trpc.o3.')
+  const loginFamily = cmd.includes('login.ecdh') || cmd.includes('ecdh_access')
+  const parts: Buffer[] = [encodeVarintField(9, 1)]
+  if (qimeiOrGuid) parts.push(encodeString(12, qimeiOrGuid))
+  if (!loginFamily && !isO3) parts.push(encodeVarintField(14, 1))
+  if (!isO3) parts.push(encodeString(15, generateTraceParent('00', '01')))
+  if (!isO3 && uid) parts.push(encodeString(16, uid))
+  parts.push(encodeVarintField(18, 0))
+  parts.push(encodeVarintField(19, 1))
+  parts.push(encodeVarintField(20, 3))
+  parts.push(encodeVarintField(21, isO3 ? 0 : 2))
+  const ccs = Buffer.concat([
+    encodeString(1, 'client_conn_seq'),
+    encodeString(2, String(connTs)),
+  ])
+  parts.push(encodeLengthDelimited(23, ccs))
+  if (signResult) parts.push(encodeSecInfo(signResult))
+  parts.push(encodeVarintField(26, 100))
+  parts.push(encodeVarintField(28, 3))
+  parts.push(encodeVarintField(34, 1))
+  return Buffer.concat(parts)
+}
+
+// HarmonyOS 9.2.71 reserve (LuckyLillia.Sign/src/Harmony/PoC/src/frame.rs, libmsf_kit.so sub_3C31B8):
+//   同 iOS, 但 f12 仅发真实注册的 qimei36 (不回落 guid), 且 f21 按 isO3/sign 设置 bit5(32) 与 bit1(2): 0/2/32/34
+export function buildHarmonyReservedField(
+  cmd: string,
+  qimei36: string,
+  uid?: string,
+  connTs: number = Math.floor(Date.now() / 1000),
+  signResult?: SignResult | null,
+): Buffer {
+  const isO3 = cmd.startsWith('trpc.o3.')
+  const loginFamily = cmd.includes('login.ecdh') || cmd.includes('ecdh_access')
+  const parts: Buffer[] = [encodeVarintField(9, 1)]
+  if (qimei36) parts.push(encodeString(12, qimei36))
+  if (!loginFamily && !isO3) parts.push(encodeVarintField(14, 1))
+  if (!isO3) parts.push(encodeString(15, generateTraceParent('00', '01')))
+  if (!isO3 && uid) parts.push(encodeString(16, uid))
+  parts.push(encodeVarintField(18, 0))
+  parts.push(encodeVarintField(19, 1))
+  parts.push(encodeVarintField(20, 3))
+  const msgType = isO3 ? (signResult ? 32 : 0) : (signResult ? 34 : 2)
+  parts.push(encodeVarintField(21, msgType))
+  const ccs = Buffer.concat([
+    encodeString(1, 'client_conn_seq'),
+    encodeString(2, String(connTs)),
+  ])
+  parts.push(encodeLengthDelimited(23, ccs))
+  if (signResult) parts.push(encodeSecInfo(signResult))
+  parts.push(encodeVarintField(26, 100))
+  parts.push(encodeVarintField(28, 3))
+  parts.push(encodeVarintField(34, 1))
+  return Buffer.concat(parts)
+}
+
 export function buildReservedFieldForVariant(
   variant: ReserveVariant,
   uid?: string,
   signResult?: SignResult | null,
-  opts: { guidHex?: string; qimei36?: string; cmd?: string } = {},
+  opts: { guidHex?: string; qimei36?: string; cmd?: string; connTs?: number } = {},
 ): Buffer {
   switch (variant) {
+    case 'ios':
+      return buildIosReservedField(opts.cmd ?? '', opts.qimei36 || opts.guidHex || '', uid, opts.connTs, signResult)
+    case 'harmony':
+      return buildHarmonyReservedField(opts.cmd ?? '', opts.qimei36 ?? '', uid, opts.connTs, signResult)
     case 'macos':
       return buildMacosReservedField(opts.guidHex ?? '', uid, signResult)
     case 'watch':

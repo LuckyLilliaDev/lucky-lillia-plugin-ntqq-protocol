@@ -119,17 +119,22 @@ describe('standalone NTQQ plugin lifecycle', () => {
     await vi.waitFor(() => expect(state.starts).toEqual([{ mode, uin: '' }, { mode, uin: '123456' }]))
   })
 
-  it('remounts for another login mode or bridge executable, but not for pure-protocol preferences', async () => {
+  it('remounts immediately when switching pure-protocol profile, login mode, or bridge executable', async () => {
     const ctx = await createContext()
     const entry = await ctx.plugin(NTProtocol, { mode: 'direct', protocol: 'linux' })
     await vi.waitFor(() => expect(state.starts).toHaveLength(1))
-    await entry.update({ mode: 'direct', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
+    // Changing bridge executable while in direct mode does not remount
+    await entry.update({ mode: 'direct', protocol: 'linux', nativeQQ: { qqPath: '/other/QQ' } })
     expect(state.starts).toHaveLength(1)
-    await entry.update({ mode: 'native', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
+    // Changing pure-protocol profile in direct mode remounts immediately without LLBot restart
+    await entry.update({ mode: 'direct', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
     await vi.waitFor(() => expect(state.starts).toHaveLength(2))
-    await entry.update({ mode: 'native', protocol: 'linux', nativeQQ: { qqPath: '/other/QQ' } })
-    expect(state.starts).toHaveLength(2)
-    await entry.update({ mode: 'native', nativeQQ: { qqPath: '/QQ' } })
+    await entry.update({ mode: 'native', protocol: 'macos', nativeQQ: { qqPath: '/other/QQ' } })
     await vi.waitFor(() => expect(state.starts).toHaveLength(3))
+    // Changing pure-protocol profile while in native mode does not remount
+    await entry.update({ mode: 'native', protocol: 'linux', nativeQQ: { qqPath: '/other/QQ' } })
+    expect(state.starts).toHaveLength(3)
+    await entry.update({ mode: 'native', nativeQQ: { qqPath: '/QQ' } })
+    await vi.waitFor(() => expect(state.starts).toHaveLength(4))
   })
 })

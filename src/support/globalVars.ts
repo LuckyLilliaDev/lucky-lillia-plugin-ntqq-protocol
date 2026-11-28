@@ -61,7 +61,7 @@ export function migrateLegacyProtocolData(
     }
     if (existsSync(legacyRoot)) {
       for (const name of readdirSync(legacyRoot)) {
-        if (!/^qq-session-\d+(?:-(?:linux|windows|macos|watch))?\.json$/.test(name)) continue
+        if (!/^qq-session-\d+(?:-(?:linux|windows|macos|watch|ipad|iphone|harmonypad|harmony))?\.json$/.test(name)) continue
         if (moveIfAbsent(path.join(legacyRoot, name), path.join(targetHostDir, name))) moved++
       }
     }
